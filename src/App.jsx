@@ -562,7 +562,7 @@ function Wochenplan({slots,teachers,students,initialLocId}){
     setAddStudentToSlot(null);
   };
 
-  const SlotCard=({s})=>{
+  const SlotCard=({s,loc})=>{
     const t=teachers.find(x=>x.id===s.teacherId);
     const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
     return <div onClick={()=>setShowSlotDetail(s)} style={{padding:"10px 12px",background:loc.color+"12",border:`1.5px solid ${loc.color}35`,borderRadius:8,cursor:"pointer",transition:"all .15s"}}
@@ -621,7 +621,7 @@ function Wochenplan({slots,teachers,students,initialLocId}){
               <span style={{fontSize:10,color:"rgba(255,255,255,.55)",marginLeft:"auto"}}>{rSlots.length} Std</span>
             </div>
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 10px 10px",padding:8,minHeight:120,display:"flex",flexDirection:"column",gap:6}}>
-              {rSlots.map(s=><SlotCard key={s.id} s={s}/>)}
+              {rSlots.map(s=><SlotCard key={s.id} s={s} loc={loc}/>)}
               <button onClick={()=>setShowAdd({roomId:room.id})} style={{padding:"8px 0",background:"transparent",border:`1.5px dashed ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
                 <Plus size={12}/> Hinzufügen
               </button>
