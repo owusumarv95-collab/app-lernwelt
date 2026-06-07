@@ -55,7 +55,7 @@ const ROOMS = {
   "neuss-i":[{id:"n1",name:"Raum 1"},{id:"n2",name:"Raum 2"}],
   "neuss-f":[{id:"f1",name:"Raum 1"},{id:"f2",name:"Raum 2"}],
 };
-const ALL_SUBJECTS = ["Mathe","Deutsch","Englisch","Französisch","Spanisch","Latein","Physik","Chemie","Biologie","Informatik","Geschichte","DaZ","LRS","Dyskalkulie","ZP10","Abitur","Vorschule"];
+const ALL_SUBJECTS = ["Mathe","Deutsch","Englisch","Franzoesisch","Spanisch","Latein","Physik","Chemie","Biologie","Informatik","Geschichte","DaZ","LRS","Dyskalkulie","ZP10","Abitur","Vorschule"];
 const WEEKDAYS = ["Mo","Di","Mi","Do","Fr"];
 const WEEKDAYS_LONG = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag"];
 const TEACHER_COLORS = ["#1A3A6B","#E8650A","#2563EB","#16A34A","#7C3AED","#DB2777","#D97706","#0891B2"];
@@ -71,7 +71,7 @@ const appDay = d => { const x=d.getDay(); return x===0?6:x-1; };
    STATE — alles in einem zentralen Store
    ========================================================= */
 const DEMO_USERS = [
-  { id: "admin_all",     name: "Herr Siebert",   short: "SI", role: "superadmin", locationId: null,      email: "siebert@lernwelt.de",   color: "#1A3A6B", title: "Geschäftsführung" },
+  { id: "admin_all",     name: "Herr Siebert",   short: "SI", role: "superadmin", locationId: null,      email: "siebert@lernwelt.de",   color: "#1A3A6B", title: "Geschaeftsfuehrung" },
   { id: "admin_heerdt",  name: "Frau Kowollik",  short: "KW", role: "loc_admin",  locationId: "heerdt",  email: "heerdt@lernwelt.de",    color: "#2563EB", title: "Standortleitung Heerdt" },
   { id: "admin_garath",  name: "Herr Dimitriou", short: "DI", role: "loc_admin",  locationId: "garath",  email: "garath@lernwelt.de",    color: "#E8650A", title: "Standortleitung Garath" },
   { id: "admin_neussi",  name: "Frau Sahin",     short: "SA", role: "loc_admin",  locationId: "neuss-i", email: "neuss-i@lernwelt.de",   color: "#16A34A", title: "Standortleitung Neuss-I" },
@@ -79,19 +79,20 @@ const DEMO_USERS = [
 ];
 
 
+const INIT_TEACHERS = [
   {id:"t1",name:"Herr Stolle",    short:"ST",subjects:["Mathe","Physik","Informatik"],color:"#1A3A6B",rate:25,email:"stolle@lernwelt.de",role:"teacher"},
-  {id:"t2",name:"Frau Yılmaz",    short:"YI",subjects:["Deutsch","DaZ","LRS"],        color:"#E8650A",rate:24,email:"yilmaz@lernwelt.de",role:"teacher"},
-  {id:"t3",name:"Herr Kovač",     short:"KO",subjects:["Englisch","Französisch"],     color:"#2563EB",rate:23,email:"kovac@lernwelt.de",role:"teacher"},
+  {id:"t2",name:"Frau Yilmaz",    short:"YI",subjects:["Deutsch","DaZ","LRS"],        color:"#E8650A",rate:24,email:"yilmaz@lernwelt.de",role:"teacher"},
+  {id:"t3",name:"Herr Kovac",     short:"KO",subjects:["Englisch","Franzoesisch"],     color:"#2563EB",rate:23,email:"kovac@lernwelt.de",role:"teacher"},
   {id:"t4",name:"Frau Nguyen",    short:"NG",subjects:["Mathe","Dyskalkulie","ZP10"], color:"#16A34A",rate:26,email:"nguyen@lernwelt.de",role:"teacher"},
   {id:"t5",name:"Herr Schreiber", short:"SC",subjects:["Chemie","Biologie","Latein"], color:"#7C3AED",rate:24,email:"schreiber@lernwelt.de",role:"teacher"},
   {id:"t6",name:"Frau Becker",    short:"BE",subjects:["Vorschule","Deutsch","LRS"],  color:"#DB2777",rate:22,email:"becker@lernwelt.de",role:"teacher"},
 ];
 const INIT_STUDENTS = [
   {id:"s1", name:"Mia Hoffmann",  short:"MH",grade:9, subjects:["Mathe"],         teacherId:"t1",locationId:"heerdt",  focus:"ZP10-Vorbereitung",since:"Sep 2024",notes:"Sehr motiviert, Algebra läuft gut."},
-  {id:"s2", name:"Leon Müller",   short:"LM",grade:5, subjects:["Deutsch","LRS"], teacherId:"t2",locationId:"heerdt",  focus:"LRS-Förderung",    since:"Jan 2025",notes:"Große Fortschritte beim Lesen."},
+  {id:"s2", name:"Leon Mueller",   short:"LM",grade:5, subjects:["Deutsch","LRS"], teacherId:"t2",locationId:"heerdt",  focus:"LRS-Förderung",    since:"Jan 2025",notes:"Große Fortschritte beim Lesen."},
   {id:"s3", name:"Sophia Kaya",   short:"SK",grade:7, subjects:["Englisch"],      teacherId:"t3",locationId:"garath",  focus:"Grammatik",        since:"Okt 2024",notes:"Vocabulary sehr gut."},
   {id:"s4", name:"Noah Bauer",    short:"NB",grade:11,subjects:["Mathe","Physik"],teacherId:"t1",locationId:"heerdt",  focus:"Abi-Vorbereitung", since:"Aug 2024",notes:"Klausurniveau erreicht."},
-  {id:"s5", name:"Emma Schäfer",  short:"ES",grade:3, subjects:["Vorschule"],     teacherId:"t6",locationId:"neuss-f", focus:"Schulstart",       since:"Mär 2025",notes:"Sehr fleißig."},
+  {id:"s5", name:"Emma Schaefer",  short:"ES",grade:3, subjects:["Vorschule"],     teacherId:"t6",locationId:"neuss-f", focus:"Schulstart",       since:"Mär 2025",notes:"Sehr fleißig."},
   {id:"s6", name:"Lukas Fischer", short:"LF",grade:8, subjects:["Chemie"],        teacherId:"t5",locationId:"neuss-i", focus:"Klausur-Prep",     since:"Nov 2024",notes:"Organische Chemie schwierig."},
   {id:"s7", name:"Hana Al-Rashid",short:"HA",grade:6, subjects:["Deutsch","DaZ"], teacherId:"t2",locationId:"garath",  focus:"Sprachförderung",  since:"Feb 2025",notes:"Deutsch wird deutlich besser."},
   {id:"s8", name:"Tim Weber",     short:"TW",grade:10,subjects:["Englisch"],      teacherId:"t3",locationId:"garath",  focus:"Abitur-Niveau",    since:"Sep 2024",notes:"Speaking sehr stark."},
