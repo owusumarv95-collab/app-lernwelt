@@ -793,10 +793,6 @@ function Wochenplan({slots,teachers,students,initialLocId}){
   </div>;
 }
 
-  const loc=LOCATIONS.find(l=>l.id===locId);
-  const locSlots=localSlots.filter(s=>s.locationId===locId);
-  const rooms=ROOMS[locId]||[];
-
 /* =========================================================
    SCHÜLER
    ========================================================= */
