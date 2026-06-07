@@ -990,6 +990,7 @@ function StudentDetail({studentId,students,teachers,apts,setStudents,onBack}){
         </Card>
       </div>
     </div>}
+  </div>;
 }
 
 /* =========================================================
