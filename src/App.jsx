@@ -70,7 +70,15 @@ const appDay = d => { const x=d.getDay(); return x===0?6:x-1; };
 /* =========================================================
    STATE — alles in einem zentralen Store
    ========================================================= */
-const INIT_TEACHERS = [
+const DEMO_USERS = [
+  { id: "admin_all",     name: "Herr Siebert",   short: "SI", role: "superadmin", locationId: null,      email: "siebert@lernwelt.de",   color: "#1A3A6B", title: "Geschäftsführung" },
+  { id: "admin_heerdt",  name: "Frau Kowollik",  short: "KW", role: "loc_admin",  locationId: "heerdt",  email: "heerdt@lernwelt.de",    color: "#2563EB", title: "Standortleitung Heerdt" },
+  { id: "admin_garath",  name: "Herr Dimitriou", short: "DI", role: "loc_admin",  locationId: "garath",  email: "garath@lernwelt.de",    color: "#E8650A", title: "Standortleitung Garath" },
+  { id: "admin_neussi",  name: "Frau Sahin",     short: "SA", role: "loc_admin",  locationId: "neuss-i", email: "neuss-i@lernwelt.de",   color: "#16A34A", title: "Standortleitung Neuss-I" },
+  { id: "admin_neussf",  name: "Herr Wolters",   short: "WO", role: "loc_admin",  locationId: "neuss-f", email: "neuss-f@lernwelt.de",   color: "#D97706", title: "Standortleitung Neuss-F" },
+];
+
+
   {id:"t1",name:"Herr Stolle",    short:"ST",subjects:["Mathe","Physik","Informatik"],color:"#1A3A6B",rate:25,email:"stolle@lernwelt.de",role:"teacher"},
   {id:"t2",name:"Frau Yılmaz",    short:"YI",subjects:["Deutsch","DaZ","LRS"],        color:"#E8650A",rate:24,email:"yilmaz@lernwelt.de",role:"teacher"},
   {id:"t3",name:"Herr Kovač",     short:"KO",subjects:["Englisch","Französisch"],     color:"#2563EB",rate:23,email:"kovac@lernwelt.de",role:"teacher"},
@@ -193,8 +201,16 @@ function Logo({size=36}){
 /* =========================================================
    SIDEBAR
    ========================================================= */
-function Sidebar({tab,setTab,onLogout,view}){
-  const tabs=[
+function Sidebar({tab,setTab,onLogout,view,user,slots}){
+  const isSuperAdmin=user?.role==="superadmin";
+  const tabs=isSuperAdmin?[
+    {key:"dashboard",label:"Dashboard",  icon:HomeIcon},
+    {key:"plan",     label:"Wochenplan", icon:Calendar},
+    {key:"students", label:"Schüler",    icon:Users},
+    {key:"teachers", label:"Lehrkräfte", icon:GraduationCap},
+    {key:"billing",  label:"Abrechnung", icon:DollarSign},
+    {key:"stunden",  label:"Stunden",    icon:Clock},
+  ]:[
     {key:"dashboard",label:"Dashboard",  icon:HomeIcon},
     {key:"plan",     label:"Wochenplan", icon:Calendar},
     {key:"students", label:"Schüler",    icon:Users},
@@ -202,35 +218,52 @@ function Sidebar({tab,setTab,onLogout,view}){
     {key:"billing",  label:"Abrechnung", icon:DollarSign},
     {key:"stunden",  label:"Stunden",    icon:Clock},
   ];
+
+  // Count slots per location
+  const slotsByLoc=loc=>slots.filter(s=>s.locationId===loc).length;
+
   return <div style={{width:240,flexShrink:0,background:C.primary,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0}}>
-    <div style={{padding:"28px 20px 20px",borderBottom:"1px solid rgba(255,255,255,.1)"}}>
-      <Logo size={28}/>
-      <div style={{marginTop:12,fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:1.5}}>VERWALTUNGSPORTAL · DEMO</div>
+    <div style={{padding:"24px 20px 18px",borderBottom:"1px solid rgba(255,255,255,.1)"}}>
+      <Logo size={26}/>
+      <div style={{marginTop:10,fontSize:9,color:"rgba(255,255,255,.35)",fontWeight:800,letterSpacing:1.5,textTransform:"uppercase"}}>
+        {user?.role==="superadmin"?"Ober-Admin · Alle Standorte":"Standort-Admin · "+LOCATIONS.find(l=>l.id===user?.locationId)?.name}
+      </div>
     </div>
-    <div style={{padding:"12px 20px 10px",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
-      <div style={{fontSize:9,color:"rgba(255,255,255,.35)",fontWeight:800,letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>Standorte</div>
-      {LOCATIONS.map(l=><div key={l.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-        <div style={{width:6,height:6,borderRadius:3,background:l.color==="rgba(26,58,107)"?C.accent:l.color}}/>
-        <span style={{fontSize:11,color:"rgba(255,255,255,.65)",fontWeight:600}}>{l.name}</span>
-      </div>)}
+
+    {/* Standorte — immer mit Zahl, klickbar */}
+    <div style={{padding:"12px 12px 10px",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
+      <div style={{fontSize:9,color:"rgba(255,255,255,.3)",fontWeight:800,letterSpacing:2,marginBottom:8,paddingLeft:6,textTransform:"uppercase"}}>Standorte</div>
+      {LOCATIONS.map(loc=>{
+        const cnt=slotsByLoc(loc.id);
+        const isMyLoc=!isSuperAdmin&&user?.locationId===loc.id;
+        const disabled=!isSuperAdmin&&user?.locationId!==loc.id;
+        return <button key={loc.id} onClick={()=>{if(!disabled){setTab("plan_"+loc.id);}}} disabled={disabled} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:8,background:tab===`plan_${loc.id}`?"rgba(255,255,255,.15)":"transparent",border:"none",cursor:disabled?"default":"pointer",marginBottom:2,opacity:disabled?.4:1,transition:"all .15s"}}>
+          <div style={{width:8,height:8,borderRadius:4,background:loc.color,flexShrink:0}}/>
+          <span style={{fontSize:11,color:"rgba(255,255,255,.75)",fontWeight:600,flex:1,textAlign:"left"}}>{loc.name}</span>
+          <span style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",background:"rgba(255,255,255,.1)",padding:"1px 6px",borderRadius:10}}>{cnt}</span>
+          {isMyLoc&&<div style={{width:5,height:5,borderRadius:"50%",background:C.accent,flexShrink:0}}/>}
+        </button>;
+      })}
     </div>
-    <nav style={{flex:1,padding:"12px 10px",display:"flex",flexDirection:"column",gap:2}}>
+
+    <nav style={{flex:1,padding:"10px 10px",display:"flex",flexDirection:"column",gap:2}}>
       {tabs.map(t=>{
-        const active=tab===t.key&&!view;
+        const active=(tab===t.key||tab.startsWith("plan_")&&t.key==="plan")&&!view;
         const Icon=t.icon;
-        return <button key={t.key} onClick={()=>setTab(t.key)} style={{width:"100%",padding:"11px 14px",borderRadius:10,background:active?"rgba(255,255,255,.15)":"transparent",border:active?"1px solid rgba(255,255,255,.2)":"1px solid transparent",color:active?"#fff":"rgba(255,255,255,.55)",fontSize:13,fontWeight:active?700:500,cursor:"pointer",fontFamily:FF.body,textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all .15s"}}>
-          <Icon size={16} strokeWidth={active?2.5:2}/>{t.label}
+        return <button key={t.key} onClick={()=>setTab(t.key)} style={{width:"100%",padding:"10px 14px",borderRadius:10,background:active?"rgba(255,255,255,.15)":"transparent",border:active?"1px solid rgba(255,255,255,.2)":"1px solid transparent",color:active?"#fff":"rgba(255,255,255,.55)",fontSize:13,fontWeight:active?700:500,cursor:"pointer",fontFamily:FF.body,textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all .15s"}}>
+          <Icon size={15} strokeWidth={active?2.5:2}/>{t.label}
         </button>;
       })}
     </nav>
-    <div style={{padding:"14px 16px",borderTop:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:10}}>
-      <div style={{width:36,height:36,borderRadius:10,background:C.accent,display:"grid",placeItems:"center",color:"#fff",fontWeight:800,fontSize:13}}>AD</div>
+
+    <div style={{padding:"12px 14px",borderTop:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:10}}>
+      <Avatar short={user?.short||"AD"} color={user?.color||C.accent} size={34}/>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Admin</div>
-        <div style={{fontSize:10,color:"rgba(255,255,255,.45)",marginTop:1}}>Geschäftsführung</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||"Admin"}</div>
+        <div style={{fontSize:9,color:"rgba(255,255,255,.4)",marginTop:1,fontWeight:700,letterSpacing:.5}}>{user?.role==="superadmin"?"OBER-ADMIN":"STANDORT-ADMIN"}</div>
       </div>
-      <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,.2)",color:"rgba(255,255,255,.5)",width:30,height:30,borderRadius:8,display:"grid",placeItems:"center",cursor:"pointer"}}>
-        <LogOut size={13}/>
+      <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,.2)",color:"rgba(255,255,255,.5)",width:28,height:28,borderRadius:7,display:"grid",placeItems:"center",cursor:"pointer"}}>
+        <LogOut size={12}/>
       </button>
     </div>
   </div>;
@@ -240,11 +273,12 @@ function Sidebar({tab,setTab,onLogout,view}){
    LOGIN
    ========================================================= */
 function Login({onLogin}){
-  const [email,setEmail]=useState("admin@lernwelt.de");
+  const [selected,setSelected]=useState("admin_all");
   const [pw,setPw]=useState("demo1234");
   const [showPw,setShowPw]=useState(false);
   const [loading,setLoading]=useState(false);
-  const submit=e=>{e.preventDefault();setLoading(true);setTimeout(()=>onLogin({id:"admin",name:"Admin",role:"admin"}),700);};
+  const submit=e=>{e.preventDefault();setLoading(true);setTimeout(()=>onLogin(DEMO_USERS.find(u=>u.id===selected)),700);};
+  const u=DEMO_USERS.find(x=>x.id===selected);
   return <div style={{minHeight:"100vh",display:"flex",background:C.bg}}>
     <div style={{flex:1,background:C.primary,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",top:-100,right:-100,width:350,height:350,background:"rgba(232,101,10,.12)",borderRadius:"50%"}}/>
@@ -254,21 +288,40 @@ function Login({onLogin}){
         <div style={{marginTop:48}}>
           <div style={{fontSize:12,color:"rgba(255,255,255,.45)",fontWeight:800,letterSpacing:2,marginBottom:14,textTransform:"uppercase"}}>Verwaltungsportal</div>
           <h1 style={{fontFamily:FF.display,fontSize:42,fontWeight:800,color:"#fff",lineHeight:1.1,margin:"0 0 18px",letterSpacing:-1.5}}>Alle 4 Standorte.<br/><span style={{color:C.accentLi}}>Ein System.</span></h1>
-          <p style={{fontSize:15,color:"rgba(255,255,255,.6)",lineHeight:1.7,maxWidth:380}}>Lehrkräfte, Schüler, Stunden, Abrechnung — standortübergreifend verwalten.</p>
+          <p style={{fontSize:15,color:"rgba(255,255,255,.6)",lineHeight:1.7,maxWidth:380}}>Standortübergreifend verwalten — oder pro Standort gezielt.</p>
         </div>
         <div style={{marginTop:44,display:"flex",flexDirection:"column",gap:10}}>
-          {["Heerdt · Garath · Neuss Innenstadt · Neuss Furth","Lehrkraft-Einladung per E-Mail","Lohnabrechnung mit PIN-Schutz","CSV-Export für den Steuerberater"].map(f=><div key={f} style={{display:"flex",alignItems:"center",gap:10,color:"rgba(255,255,255,.8)",fontSize:13}}>
+          {["Ober-Admin: alle 4 Standorte in einer Ansicht","Standort-Admin: fokussiert auf einen Ort","Lehrkräfte-Einladung per E-Mail","Lohnabrechnung mit PIN-Schutz"].map(f=><div key={f} style={{display:"flex",alignItems:"center",gap:10,color:"rgba(255,255,255,.8)",fontSize:13}}>
             <div style={{width:20,height:20,borderRadius:6,background:C.accent,display:"grid",placeItems:"center",flexShrink:0}}><Check size={11} color="#fff" strokeWidth={3}/></div>{f}
           </div>)}
         </div>
       </div>
     </div>
-    <div style={{width:460,display:"flex",alignItems:"center",justifyContent:"center",padding:60,background:C.surface}}>
+    <div style={{width:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 50px",background:C.surface,overflowY:"auto"}}>
       <div style={{width:"100%"}}>
-        <h2 style={{fontFamily:FF.display,fontSize:30,fontWeight:800,color:C.textHi,margin:"0 0 6px",letterSpacing:-1}}>Anmelden</h2>
-        <p style={{fontSize:14,color:C.textDim,margin:"0 0 28px"}}>Demo-Zugangsdaten sind bereits eingetragen.</p>
-        <form onSubmit={submit} style={{display:"flex",flexDirection:"column",gap:14}}>
-          <Input label="E-Mail" value={email} onChange={setEmail} type="email"/>
+        <h2 style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:C.textHi,margin:"0 0 6px",letterSpacing:-1}}>Demo-Zugang wählen</h2>
+        <p style={{fontSize:13,color:C.textDim,margin:"0 0 22px"}}>Wähle eine Rolle um den Funktionsumfang zu erleben.</p>
+
+        {/* Rolle wählen */}
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+          {DEMO_USERS.map(u2=>{
+            const loc=LOCATIONS.find(l=>l.id===u2.locationId);
+            const active=selected===u2.id;
+            return <button key={u2.id} onClick={()=>setSelected(u2.id)} style={{padding:"12px 16px",background:active?u2.color+"12":C.surfaceAlt,border:`1.5px solid ${active?u2.color:C.border}`,borderRadius:12,cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",alignItems:"center",gap:12,transition:"all .15s"}}>
+              <Avatar short={u2.short} color={u2.color} size={38}/>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{u2.name}</div>
+                <div style={{fontSize:11,color:C.textDim,marginTop:2}}>{u2.title}</div>
+              </div>
+              <div style={{padding:"3px 10px",borderRadius:6,background:u2.role==="superadmin"?C.primary+"18":u2.color+"18",color:u2.role==="superadmin"?C.primary:u2.color,fontSize:10,fontWeight:800,letterSpacing:.5}}>
+                {u2.role==="superadmin"?"OBER-ADMIN":"STANDORT-ADMIN"}
+              </div>
+              {active&&<Check size={16} color={u2.color}/>}
+            </button>;
+          })}
+        </div>
+
+        <form onSubmit={submit} style={{display:"flex",flexDirection:"column",gap:12}}>
           <div>
             <label style={{display:"block",fontSize:12,fontWeight:700,color:C.textDim,marginBottom:6}}>Passwort</label>
             <div style={{position:"relative"}}>
@@ -278,12 +331,12 @@ function Login({onLogin}){
               </button>
             </div>
           </div>
-          <button type="submit" disabled={loading} style={{padding:"14px 20px",background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:800,fontFamily:FF.body,cursor:"pointer",boxShadow:`0 8px 20px -6px ${C.accent}60`,marginTop:6}}>
-            {loading?"Anmelden…":"Einloggen →"}
+          <button type="submit" disabled={loading} style={{padding:"14px 20px",background:`linear-gradient(135deg,${u?.color||C.accent} 0%,${C.accentDk} 100%)`,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:800,fontFamily:FF.body,cursor:"pointer",boxShadow:`0 8px 20px -6px ${u?.color||C.accent}60`,marginTop:4}}>
+            {loading?"Anmelden…":`Als ${u?.name} einloggen →`}
           </button>
         </form>
-        <div style={{marginTop:20,padding:"12px 16px",background:C.accentTint,border:`1px solid ${C.accent}30`,borderRadius:10,fontSize:12,color:C.accentDk,fontWeight:600}}>
-          Demo: admin@lernwelt.de · demo1234
+        <div style={{marginTop:14,padding:"10px 14px",background:C.accentTint,border:`1px solid ${C.accent}30`,borderRadius:10,fontSize:12,color:C.accentDk,fontWeight:600}}>
+          Demo-Passwort: demo1234
         </div>
       </div>
     </div>
@@ -480,76 +533,96 @@ function AptDetail({aptId,apts,teachers,students,setApts,onBack}){
 /* =========================================================
    WOCHENPLAN
    ========================================================= */
-function Wochenplan({slots,teachers,students}){
-  const [locId,setLocId]=useState("heerdt");
+function Wochenplan({slots,teachers,students,initialLocId}){
+  const [locId,setLocId]=useState(initialLocId||"heerdt");
   const [dayIdx,setDayIdx]=useState(Math.min(appDay(today),4));
   const [view,setView]=useState("week");
   const [showAdd,setShowAdd]=useState(null);
+  const [showSlotDetail,setShowSlotDetail]=useState(null);
   const [newSlot,setNewSlot]=useState({time:"14:00",teacherId:"",studentIds:[],type:"einzel",roomId:""});
   const [localSlots,setLocalSlots]=useState(slots);
+  const [addStudentToSlot,setAddStudentToSlot]=useState(null);
 
   const loc=LOCATIONS.find(l=>l.id===locId);
   const locSlots=localSlots.filter(s=>s.locationId===locId);
   const rooms=ROOMS[locId]||[];
+  const slotsByLoc=lid=>localSlots.filter(s=>s.locationId===lid).length;
 
   const addSlot=()=>{
     const id="new_"+Date.now();
-    setLocalSlots(prev=>[...prev,{id,day:dayIdx,locationId:locId,...newSlot,roomId:newSlot.roomId||rooms[0]?.id}]);
+    const roomId=showAdd?.roomId||rooms[0]?.id;
+    setLocalSlots(prev=>[...prev,{id,day:dayIdx,locationId:locId,...newSlot,roomId}]);
     setShowAdd(null);
-    setNewSlot({time:"14:00",teacherId:"",studentIds:[],type:"einzel",roomId:""});
+    setNewSlot({time:"14:00",teacherId:"",studentIds:[],type:"einzel"});
   };
 
-  return <div style={{padding:"32px 40px 60px"}}>
-    <div style={{marginBottom:24}}>
+  const addStudentToSlotFn=(slotId,studentId)=>{
+    setLocalSlots(prev=>prev.map(s=>s.id===slotId?{...s,studentIds:[...new Set([...s.studentIds,studentId])]}:s));
+    setAddStudentToSlot(null);
+  };
+
+  const SlotCard=({s})=>{
+    const t=teachers.find(x=>x.id===s.teacherId);
+    const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
+    return <div onClick={()=>setShowSlotDetail(s)} style={{padding:"10px 12px",background:loc.color+"12",border:`1.5px solid ${loc.color}35`,borderRadius:8,cursor:"pointer",transition:"all .15s"}}
+      onMouseEnter={e=>{e.currentTarget.style.background=loc.color+"22";e.currentTarget.style.borderColor=loc.color+"80";}}
+      onMouseLeave={e=>{e.currentTarget.style.background=loc.color+"12";e.currentTarget.style.borderColor=loc.color+"35";}}>
+      <div style={{fontFamily:FF.display,fontSize:13,fontWeight:800,color:loc.color}}>{s.time}</div>
+      <div style={{fontSize:12,fontWeight:700,color:C.textHi,marginTop:2}}>{t?.name||"—"}</div>
+      <div style={{fontSize:10,color:C.textDim,marginTop:1}}>{studs.length>0?studs.map(s=>s.name).join(", "):"Keine Schüler"}</div>
+      <div style={{marginTop:5,display:"flex",gap:4}}>
+        <Badge color={s.type==="gruppe"?C.info:C.success}>{s.type==="gruppe"?`Gruppe · ${studs.length}`:"Einzel"}</Badge>
+      </div>
+    </div>;
+  };
+
+  return <div style={{padding:"28px 36px 60px"}}>
+    <div style={{marginBottom:22}}>
       <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Admin · Wochenplan</div>
-      <h1 style={{fontFamily:FF.display,fontSize:32,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>Wochenplan</h1>
+      <h1 style={{fontFamily:FF.display,fontSize:30,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>Wochenplan</h1>
     </div>
 
-    {/* Standort Tabs */}
-    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-      {LOCATIONS.map(l=><button key={l.id} onClick={()=>setLocId(l.id)} style={{padding:"10px 18px",borderRadius:10,background:locId===l.id?l.color:C.surface,border:`1.5px solid ${locId===l.id?l.color:C.border}`,color:locId===l.id?"#fff":C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",gap:6}}>
-        <MapPin size={12}/>{l.short} <span style={{fontSize:10,opacity:.7}}>({locSlots.filter(s=>s.locationId===l.id).length})</span>
-      </button>)}
+    {/* Standort Tabs — mit Stundenzahl immer sichtbar */}
+    <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
+      {LOCATIONS.map(l=>{
+        const cnt=slotsByLoc(l.id);
+        return <button key={l.id} onClick={()=>setLocId(l.id)} style={{padding:"9px 16px",borderRadius:10,background:locId===l.id?l.color:C.surface,border:`1.5px solid ${locId===l.id?l.color:C.border}`,color:locId===l.id?"#fff":C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",gap:6,transition:"all .15s"}}>
+          <MapPin size={12}/>{l.short}
+          <span style={{padding:"1px 8px",borderRadius:10,background:locId===l.id?"rgba(255,255,255,.25)":C.surfaceAlt,color:locId===l.id?"#fff":l.color,fontSize:11,fontWeight:800}}>{cnt}</span>
+        </button>;
+      })}
     </div>
 
     {/* View Toggle */}
-    <div style={{display:"flex",gap:4,marginBottom:20,background:C.surfaceAlt,padding:4,borderRadius:10,width:"fit-content"}}>
-      {[{id:"day",label:"Tagesansicht"},{id:"week",label:"Wochenübersicht"}].map(v=><button key={v.id} onClick={()=>setView(v.id)} style={{padding:"8px 18px",borderRadius:8,background:view===v.id?C.primary:"transparent",border:"none",color:view===v.id?"#fff":C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{v.label}</button>)}
+    <div style={{display:"flex",gap:4,marginBottom:18,background:C.surfaceAlt,padding:4,borderRadius:10,width:"fit-content"}}>
+      {[{id:"day",label:"Tagesansicht"},{id:"week",label:"Wochenübersicht"}].map(v=><button key={v.id} onClick={()=>setView(v.id)} style={{padding:"7px 16px",borderRadius:8,background:view===v.id?C.primary:"transparent",border:"none",color:view===v.id?"#fff":C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{v.label}</button>)}
     </div>
 
     {view==="day"&&<>
       {/* Tag Tabs */}
-      <div style={{display:"flex",gap:6,marginBottom:20}}>
+      <div style={{display:"flex",gap:6,marginBottom:18}}>
         {WEEKDAYS.map((d,i)=>{
           const cnt=locSlots.filter(s=>s.day===i).length;
-          return <button key={d} onClick={()=>setDayIdx(i)} style={{flex:1,padding:"12px 8px",borderRadius:10,background:dayIdx===i?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.surface,border:`1.5px solid ${dayIdx===i?"transparent":C.border}`,color:dayIdx===i?"#fff":C.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,textAlign:"center"}}>
-            <div>{d}</div><div style={{fontSize:10,marginTop:2,opacity:.75}}>{cnt} Std</div>
+          return <button key={d} onClick={()=>setDayIdx(i)} style={{flex:1,padding:"11px 8px",borderRadius:10,background:dayIdx===i?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.surface,border:`1.5px solid ${dayIdx===i?"transparent":C.border}`,color:dayIdx===i?"#fff":C.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,textAlign:"center"}}>
+            <div>{d}</div>
+            <div style={{fontSize:11,marginTop:3,fontWeight:800,color:dayIdx===i?"rgba(255,255,255,.8)":(cnt>0?C.accent:C.textVeryDim)}}>{cnt} Std</div>
           </button>;
         })}
       </div>
       {/* Räume */}
-      <div style={{display:"grid",gridTemplateColumns:`repeat(${rooms.length},1fr)`,gap:14}}>
+      <div style={{display:"grid",gridTemplateColumns:`repeat(${rooms.length},1fr)`,gap:12}}>
         {rooms.map(room=>{
           const rSlots=locSlots.filter(s=>s.day===dayIdx&&s.roomId===room.id).sort((a,b)=>a.time.localeCompare(b.time));
           return <div key={room.id}>
-            <div style={{padding:"10px 14px",background:loc.color,borderRadius:"10px 10px 0 0",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:26,height:26,borderRadius:7,background:"rgba(255,255,255,.15)",display:"grid",placeItems:"center",color:"#fff",fontWeight:800,fontSize:11}}>{room.name.replace("Raum ","")}</div>
-              <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>{room.name}</span>
-              <span style={{fontSize:10,color:"rgba(255,255,255,.6)",marginLeft:"auto"}}>{rSlots.length} Stunden</span>
+            <div style={{padding:"9px 12px",background:loc.color,borderRadius:"10px 10px 0 0",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:24,height:24,borderRadius:6,background:"rgba(255,255,255,.15)",display:"grid",placeItems:"center",color:"#fff",fontWeight:800,fontSize:10}}>{room.name.replace("Raum ","")}</div>
+              <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{room.name}</span>
+              <span style={{fontSize:10,color:"rgba(255,255,255,.55)",marginLeft:"auto"}}>{rSlots.length} Std</span>
             </div>
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 10px 10px",padding:8,minHeight:140,display:"flex",flexDirection:"column",gap:6}}>
-              {rSlots.map(s=>{
-                const t=teachers.find(x=>x.id===s.teacherId);
-                const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
-                return <div key={s.id} style={{padding:"10px 12px",background:loc.color+"12",border:`1.5px solid ${loc.color}35`,borderRadius:8}}>
-                  <div style={{fontFamily:FF.display,fontSize:13,fontWeight:800,color:loc.color}}>{s.time}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:C.textHi,marginTop:2}}>{t?.name||"—"}</div>
-                  <div style={{fontSize:10,color:C.textDim,marginTop:1}}>{studs.map(s=>s.name.split(" ")[0]).join(", ")||"Keine Schüler"}</div>
-                  <div style={{marginTop:5}}><Badge color={s.type==="gruppe"?C.info:C.success}>{s.type==="gruppe"?`Gruppe · ${studs.length}`:"Einzel"}</Badge></div>
-                </div>;
-              })}
-              <button onClick={()=>setShowAdd({roomId:room.id})} style={{padding:"9px 0",background:"transparent",border:`1.5px dashed ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                <Plus size={12}/> Stunde hinzufügen
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 10px 10px",padding:8,minHeight:120,display:"flex",flexDirection:"column",gap:6}}>
+              {rSlots.map(s=><SlotCard key={s.id} s={s}/>)}
+              <button onClick={()=>setShowAdd({roomId:room.id})} style={{padding:"8px 0",background:"transparent",border:`1.5px dashed ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                <Plus size={12}/> Hinzufügen
               </button>
             </div>
           </div>;
@@ -560,22 +633,27 @@ function Wochenplan({slots,teachers,students}){
     {view==="week"&&<div style={{overflowX:"auto"}}>
       <table style={{width:"100%",borderCollapse:"separate",borderSpacing:"6px 0"}}>
         <thead><tr>
-          {WEEKDAYS_LONG.map((d,i)=><th key={d} style={{padding:"12px 14px",background:i===appDay(today)?C.accent:C.primary,color:"#fff",borderRadius:"10px 10px 0 0",fontSize:13,fontWeight:700,textAlign:"center"}}>
-            {d}<div style={{fontSize:10,opacity:.65,marginTop:2}}>{locSlots.filter(s=>s.day===i).length} Std</div>
-          </th>)}
+          {WEEKDAYS_LONG.map((d,i)=>{
+            const cnt=locSlots.filter(s=>s.day===i).length;
+            return <th key={d} style={{padding:"12px 14px",background:i===appDay(today)?C.accent:C.primary,color:"#fff",borderRadius:"10px 10px 0 0",fontSize:13,fontWeight:700,textAlign:"center"}}>
+              {d}<div style={{fontSize:11,opacity:.75,marginTop:2,fontWeight:800}}>{cnt} Std</div>
+            </th>;
+          })}
         </tr></thead>
         <tbody><tr>
           {WEEKDAYS.map((_,di)=>{
             const dSlots=locSlots.filter(s=>s.day===di).sort((a,b)=>a.time.localeCompare(b.time));
-            return <td key={di} style={{verticalAlign:"top",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"0 0 10px 10px",padding:8,minWidth:150}}>
+            return <td key={di} style={{verticalAlign:"top",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"0 0 10px 10px",padding:8,minWidth:160}}>
               {dSlots.length===0?<div style={{padding:"20px 0",textAlign:"center",color:C.textVeryDim,fontSize:12}}>Frei</div>:dSlots.map(s=>{
                 const t=teachers.find(x=>x.id===s.teacherId);
                 const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
                 const r=ROOMS[locId]?.find(x=>x.id===s.roomId);
-                return <div key={s.id} style={{marginBottom:6,padding:"8px 10px",background:loc.color+"10",border:`1px solid ${loc.color}25`,borderRadius:8}}>
+                return <div key={s.id} onClick={()=>setShowSlotDetail(s)} style={{marginBottom:6,padding:"8px 10px",background:loc.color+"10",border:`1px solid ${loc.color}25`,borderRadius:8,cursor:"pointer",transition:"all .15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background=loc.color+"22"}
+                  onMouseLeave={e=>e.currentTarget.style.background=loc.color+"10"}>
                   <div style={{fontFamily:FF.display,fontWeight:800,fontSize:12,color:loc.color}}>{s.time}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:C.textHi,marginTop:1}}>{t?.short} · {r?.name}</div>
-                  <div style={{fontSize:10,color:C.textDim}}>{studs.map(s=>s.name.split(" ")[0]).join(", ")}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:C.textHi,marginTop:1}}>{t?.name||"—"}</div>
+                  <div style={{fontSize:10,color:C.textDim}}>{r?.name} · {studs.length} Schüler</div>
                 </div>;
               })}
             </td>;
@@ -584,13 +662,83 @@ function Wochenplan({slots,teachers,students}){
       </table>
     </div>}
 
+    {/* Slot Detail Modal */}
+    {showSlotDetail&&(()=>{
+      const s=showSlotDetail;
+      const t=teachers.find(x=>x.id===s.teacherId);
+      const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
+      const r=ROOMS[s.locationId]?.find(x=>x.id===s.roomId);
+      const loc2=LOCATIONS.find(l=>l.id===s.locationId);
+      const unassigned=students.filter(x=>!s.studentIds.includes(x.id));
+      return <div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.65)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>
+        <div style={{background:C.surface,borderRadius:20,width:480,maxHeight:"88vh",overflow:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.22)"}}>
+          <div style={{height:4,background:loc2?.color||C.primary,borderRadius:"20px 20px 0 0"}}/>
+          <div style={{padding:"20px 24px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:loc2?.color,letterSpacing:1.5,marginBottom:4}}>{WEEKDAYS_LONG[s.day]} · {s.time} Uhr</div>
+                <h3 style={{fontFamily:FF.display,fontSize:20,fontWeight:800,color:C.textHi,margin:0}}>{r?.name} · {loc2?.name}</h3>
+              </div>
+              <button onClick={()=>setShowSlotDetail(null)} style={{background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}><X size={20}/></button>
+            </div>
+
+            {/* Lehrkraft */}
+            <div style={{padding:"12px 14px",background:C.surfaceAlt,borderRadius:10,marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+              <Avatar short={t?.short||"?"} color={t?.color||C.primary} size={38}/>
+              <div>
+                <div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{t?.name||"Keine Lehrkraft"}</div>
+                <div style={{fontSize:11,color:C.textDim}}>{t?.subjects?.join(" · ")}</div>
+              </div>
+              <Badge color={s.type==="gruppe"?C.info:C.success} style={{marginLeft:"auto"}}>{s.type==="gruppe"?`Gruppe`:"Einzelstunde"}</Badge>
+            </div>
+
+            {/* Schüler */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:C.textDim,letterSpacing:1.5,marginBottom:8,textTransform:"uppercase"}}>Schüler ({studs.length})</div>
+              {studs.map(st=><div key={st.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:C.surfaceAlt,borderRadius:8,marginBottom:6}}>
+                <Avatar short={st.short} size={30}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:C.textHi}}>{st.name}</div>
+                  <div style={{fontSize:10,color:C.textDim}}>Kl. {st.grade} · {st.subjects?.join(", ")}</div>
+                </div>
+                <LocBadge locationId={st.locationId}/>
+              </div>)}
+
+              {/* Schüler hinzufügen */}
+              {addStudentToSlot===s.id?<div style={{marginTop:8}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.textDim,marginBottom:6}}>Schüler hinzufügen:</div>
+                <div style={{maxHeight:180,overflow:"auto",display:"flex",flexDirection:"column",gap:4}}>
+                  {unassigned.map(st=><button key={st.id} onClick={()=>addStudentToSlotFn(s.id,st.id)} style={{padding:"8px 12px",background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:8,cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",alignItems:"center",gap:8}}>
+                    <Avatar short={st.short} size={26}/>
+                    <span style={{fontSize:12,fontWeight:600,color:C.textHi}}>{st.name}</span>
+                    <span style={{fontSize:10,color:C.textDim,marginLeft:"auto"}}>Kl.{st.grade}</span>
+                  </button>)}
+                </div>
+                <button onClick={()=>setAddStudentToSlot(null)} style={{marginTop:6,width:"100%",padding:"8px 0",background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbrechen</button>
+              </div>:<button onClick={()=>setAddStudentToSlot(s.id)} style={{marginTop:6,width:"100%",padding:"9px 0",background:"transparent",border:`1.5px dashed ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                <UserPlus size={12}/> Schüler hinzufügen
+              </button>}
+            </div>
+
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setShowSlotDetail(null)} style={{flex:1,padding:12,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Schließen</button>
+              <button style={{flex:1,padding:12,background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <Edit2 size={12}/> Bearbeiten
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>;
+    })()}
+
     {/* Add Slot Modal */}
     {showAdd&&<div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>
-      <div style={{background:C.surface,borderRadius:18,padding:28,width:420,boxShadow:"0 24px 48px rgba(0,0,0,.2)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+      <div style={{background:C.surface,borderRadius:18,padding:28,width:460,maxHeight:"88vh",overflow:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.2)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
           <h3 style={{fontFamily:FF.display,fontSize:18,fontWeight:800,color:C.textHi,margin:0}}>Stunde hinzufügen</h3>
           <button onClick={()=>setShowAdd(null)} style={{background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}><X size={20}/></button>
         </div>
+        <div style={{fontSize:12,color:C.accent,fontWeight:700,marginBottom:18}}>{LOCATIONS.find(l=>l.id===locId)?.name} · {ROOMS[locId]?.find(r=>r.id===showAdd.roomId)?.name} · {WEEKDAYS_LONG[dayIdx]}</div>
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
           <div>
             <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Uhrzeit</label>
@@ -602,7 +750,7 @@ function Wochenplan({slots,teachers,students}){
             <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Lehrkraft</label>
             <select value={newSlot.teacherId} onChange={e=>setNewSlot(p=>({...p,teacherId:e.target.value}))} style={{width:"100%",padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body}}>
               <option value="">Auswählen…</option>
-              {teachers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+              {teachers.map(t=><option key={t.id} value={t.id}>{t.name} · {t.subjects.join(", ")}</option>)}
             </select>
           </div>
           <div>
@@ -611,15 +759,42 @@ function Wochenplan({slots,teachers,students}){
               {["einzel","gruppe"].map(v=><button key={v} onClick={()=>setNewSlot(p=>({...p,type:v}))} style={{flex:1,padding:"10px 0",borderRadius:8,background:newSlot.type===v?C.primary:C.surfaceAlt,border:`1.5px solid ${newSlot.type===v?C.primary:C.border}`,color:newSlot.type===v?"#fff":C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,textTransform:"capitalize"}}>{v}</button>)}
             </div>
           </div>
-          <div style={{display:"flex",gap:10,marginTop:8}}>
+          {/* Schüler auswählen */}
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>
+              Schüler auswählen {newSlot.studentIds.length>0&&<span style={{color:C.accent}}>({newSlot.studentIds.length} gewählt)</span>}
+            </label>
+            <div style={{maxHeight:200,overflow:"auto",display:"flex",flexDirection:"column",gap:5,padding:2}}>
+              {students.map(s=>{
+                const on=newSlot.studentIds.includes(s.id);
+                const sloc=LOCATIONS.find(l=>l.id===s.locationId);
+                return <button key={s.id} onClick={()=>setNewSlot(p=>({...p,studentIds:on?p.studentIds.filter(x=>x!==s.id):[...p.studentIds,s.id]}))} style={{padding:"8px 12px",background:on?C.accentTint:C.surfaceAlt,border:`1.5px solid ${on?C.accent:C.border}`,borderRadius:8,cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",alignItems:"center",gap:10,transition:"all .1s"}}>
+                  <Avatar short={s.short} size={28}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:C.textHi}}>{s.name}</div>
+                    <div style={{fontSize:10,color:C.textDim}}>Kl.{s.grade} · {s.subjects.join(", ")}</div>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:700,color:sloc?.color,background:sloc?.color+"18",padding:"2px 6px",borderRadius:5,flexShrink:0}}>{sloc?.short}</span>
+                  {on&&<Check size={14} color={C.accent}/>}
+                </button>;
+              })}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:10,marginTop:4}}>
             <button onClick={()=>setShowAdd(null)} style={{flex:1,padding:12,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbrechen</button>
-            <button onClick={addSlot} disabled={!newSlot.teacherId} style={{flex:1,padding:12,background:newSlot.teacherId?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.border,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:newSlot.teacherId?"pointer":"not-allowed",fontFamily:FF.body}}>Hinzufügen</button>
+            <button onClick={addSlot} disabled={!newSlot.teacherId} style={{flex:1,padding:12,background:newSlot.teacherId?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.border,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:newSlot.teacherId?"pointer":"not-allowed",fontFamily:FF.body}}>
+              Stunde anlegen
+            </button>
           </div>
         </div>
       </div>
     </div>}
   </div>;
 }
+
+  const loc=LOCATIONS.find(l=>l.id===locId);
+  const locSlots=localSlots.filter(s=>s.locationId===locId);
+  const rooms=ROOMS[locId]||[];
 
 /* =========================================================
    SCHÜLER
@@ -737,14 +912,14 @@ function StudentDetail({studentId,students,teachers,apts,setStudents,onBack}){
 
   const save=()=>{setStudents(prev=>prev.map(x=>x.id===studentId?{...x,...draft}:x));setEditing(false);};
 
-  return <div style={{padding:"28px 40px 60px",maxWidth:800}}>
+  return <div style={{padding:"28px 40px 60px",maxWidth:960,margin:"0 auto"}}>
     <button onClick={onBack} style={{background:"transparent",border:"none",color:C.textDim,display:"flex",alignItems:"center",gap:6,padding:0,cursor:"pointer",marginBottom:20,fontFamily:FF.body,fontSize:13,fontWeight:600}}>
-      <ArrowLeft size={16}/> Zurück
+      <ArrowLeft size={16}/> Zurück zur Schülerliste
     </button>
-    <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24}}>
-      <Avatar short={s.short} size={64}/>
-      <div>
-        <h1 style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:C.textHi,margin:"0 0 6px",letterSpacing:-0.8}}>{s.name}</h1>
+    <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24,padding:"24px 28px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,boxShadow:"0 1px 4px rgba(26,58,107,.05)"}}>
+      <Avatar short={s.short} size={72}/>
+      <div style={{flex:1}}>
+        <h1 style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:C.textHi,margin:"0 0 8px",letterSpacing:-0.8}}>{s.name}</h1>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           <Badge color={C.primary}>Klasse {s.grade}</Badge>
           {s.subjects.map(sub=><Badge key={sub} color={C.primaryLi}>{sub}</Badge>)}
@@ -752,61 +927,68 @@ function StudentDetail({studentId,students,teachers,apts,setStudents,onBack}){
           {s.focus&&<Badge color={C.accent}>{s.focus}</Badge>}
         </div>
       </div>
-      <button onClick={()=>setEditing(!editing)} style={{marginLeft:"auto",padding:"10px 16px",background:editing?C.surface:`linear-gradient(135deg,${C.primary} 0%,${C.primaryLi} 100%)`,border:editing?`1px solid ${C.border}`:"none",borderRadius:10,color:editing?C.text:"#fff",fontSize:13,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+      <button onClick={()=>setEditing(!editing)} style={{padding:"10px 18px",background:editing?C.surface:`linear-gradient(135deg,${C.primary} 0%,${C.primaryLi} 100%)`,border:editing?`1px solid ${C.border}`:"none",borderRadius:10,color:editing?C.text:"#fff",fontSize:13,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
         <Edit2 size={13}/>{editing?"Abbrechen":"Bearbeiten"}
       </button>
     </div>
 
     {editing?<Card accent={C.accent}>
-      <div style={{paddingTop:4,display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{paddingTop:4,display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
         <Input label="Name" value={draft.name} onChange={v=>setDraft(p=>({...p,name:v}))}/>
         <Input label="Klasse" value={String(draft.grade)} onChange={v=>setDraft(p=>({...p,grade:parseInt(v)||1}))} type="number"/>
         <Input label="Schwerpunkt" value={draft.focus||""} onChange={v=>setDraft(p=>({...p,focus:v}))}/>
-        <div>
+        <div/>
+        <div style={{gridColumn:"1/-1"}}>
           <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>Fächer</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {ALL_SUBJECTS.map(sub=>{const on=draft.subjects.includes(sub);return <button key={sub} onClick={()=>setDraft(p=>({...p,subjects:on?p.subjects.filter(x=>x!==sub):[...p.subjects,sub]}))} style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${on?C.accent:C.border}`,background:on?C.accentTint:C.surfaceAlt,color:on?C.accent:C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{sub}</button>;})}
           </div>
         </div>
-        <button onClick={save} style={{padding:12,background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-          <Check size={15}/> Speichern
-        </button>
+        <div style={{gridColumn:"1/-1"}}>
+          <button onClick={save} style={{width:"100%",padding:13,background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            <Check size={15}/> Änderungen speichern
+          </button>
+        </div>
       </div>
-    </Card>:<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+    </Card>:<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
       <Card>
         <SecTitle>Lehrkraft</SecTitle>
-        {t?<div style={{display:"flex",alignItems:"center",gap:10}}>
-          <Avatar short={t.short} color={t.color} size={40}/>
-          <div><div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{t.name}</div><div style={{fontSize:11,color:C.textDim}}>{t.subjects?.join(" · ")}</div></div>
+        {t?<div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Avatar short={t.short} color={t.color} size={44}/>
+          <div><div style={{fontWeight:700,fontSize:15,color:C.textHi}}>{t.name}</div><div style={{fontSize:12,color:C.textDim,marginTop:2}}>{t.subjects?.join(" · ")}</div></div>
         </div>:<span style={{fontSize:13,color:C.warn,fontWeight:700}}>Keine Zuweisung</span>}
       </Card>
       <Card>
-        <SecTitle>Standort</SecTitle>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:10,height:10,borderRadius:5,background:loc?.color}}/>
-          <span style={{fontWeight:700,fontSize:14,color:C.textHi}}>{loc?.name}</span>
+        <SecTitle>Standort & Info</SecTitle>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <div style={{width:10,height:10,borderRadius:5,background:LOCATIONS.find(l=>l.id===s.locationId)?.color}}/>
+          <span style={{fontWeight:700,fontSize:14,color:C.textHi}}>{LOCATIONS.find(l=>l.id===s.locationId)?.name}</span>
         </div>
-        <div style={{marginTop:8,fontSize:12,color:C.textDim}}>seit {s.since}</div>
+        <div style={{fontSize:12,color:C.textDim}}>Dabei seit {s.since}</div>
+        {s.focus&&<div style={{marginTop:8}}><Badge color={C.accent}>{s.focus}</Badge></div>}
       </Card>
+      {s.notes&&<Card style={{gridColumn:"1/-1"}}>
+        <SecTitle>Notizen</SecTitle>
+        <p style={{fontSize:13,color:C.text,lineHeight:1.6,margin:0}}>{s.notes}</p>
+      </Card>}
+      <div style={{gridColumn:"1/-1"}}>
+        <Card>
+          <SecTitle>Termine ({sApts.length})</SecTitle>
+          {sApts.length===0?<div style={{padding:"20px 0",textAlign:"center",color:C.textVeryDim,fontSize:13}}>Noch keine Termine erfasst.</div>:
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {sApts.slice(0,8).map(a=>{
+              const sc={completed:C.success,"checked-in":C.accent,scheduled:C.textDim};
+              return <div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.surfaceAlt,borderRadius:8}}>
+                <div style={{width:8,height:8,borderRadius:4,background:sc[a.status]||C.textDim,flexShrink:0}}/>
+                <span style={{fontFamily:FF.display,fontWeight:700,fontSize:12,color:C.textHi,minWidth:40}}>{a.time}</span>
+                <span style={{fontSize:11,color:C.textDim,flex:1}}>{LOCATIONS.find(l=>l.id===a.locationId)?.short} · {a.room}</span>
+                {a.completedDur&&<span style={{fontSize:11,fontWeight:700,color:C.success}}>{a.completedDur}m</span>}
+              </div>;
+            })}
+          </div>}
+        </Card>
+      </div>
     </div>}
-
-    {s.notes&&!editing&&<Card><SecTitle>Notizen</SecTitle><p style={{fontSize:13,color:C.text,lineHeight:1.6,margin:0}}>{s.notes}</p></Card>}
-
-    <div style={{marginTop:16}}>
-      <Card>
-        <SecTitle>Termine ({sApts.length})</SecTitle>
-        {sApts.slice(0,5).map(a=>{
-          const sc={completed:C.success,"checked-in":C.accent,scheduled:C.textDim};
-          return <div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.surfaceAlt,borderRadius:8,marginBottom:6}}>
-            <div style={{width:8,height:8,borderRadius:4,background:sc[a.status]||C.textDim,flexShrink:0}}/>
-            <span style={{fontFamily:FF.display,fontWeight:700,fontSize:13,color:C.textHi,minWidth:44}}>{a.time}</span>
-            <span style={{fontSize:12,color:C.textDim,flex:1}}>{a.locationId} · {a.room}</span>
-            {a.completedDur&&<span style={{fontSize:11,fontWeight:700,color:C.success}}>{a.completedDur}m</span>}
-          </div>;
-        })}
-      </Card>
-    </div>
-  </div>;
 }
 
 /* =========================================================
@@ -1114,6 +1296,17 @@ export default function App(){
 
   const navTab=t=>{setTab(t);setView(null);};
 
+  // Filter by location for loc_admin
+  const filteredStudents=user?.role==="loc_admin"?students.filter(s=>s.locationId===user.locationId):students;
+  const filteredTeachers=user?.role==="loc_admin"?teachers.filter(t=>{
+    const myStudents=students.filter(s=>s.locationId===user.locationId);
+    return myStudents.some(s=>s.teacherId===t.id);
+  }):teachers;
+  const filteredApts=user?.role==="loc_admin"?apts.filter(a=>a.locationId===user.locationId):apts;
+
+  // Extract location from plan_xxx tab
+  const planLocId=tab.startsWith("plan_")?tab.replace("plan_",""):null;
+
   const renderView=()=>{
     if(view?.type==="apt") return <AptDetail aptId={view.id} apts={apts} teachers={teachers} students={students} setApts={setApts} onBack={()=>setView(null)}/>;
     if(view?.type==="student") return <StudentDetail studentId={view.id} students={students} teachers={teachers} apts={apts} setStudents={setStudents} onBack={()=>setView(null)}/>;
@@ -1123,21 +1316,22 @@ export default function App(){
 
   const renderTab=()=>{
     if(view) return renderView();
-    if(tab==="dashboard") return <Dashboard apts={apts} teachers={teachers} students={students} slots={INIT_SLOTS} setTab={navTab} setView={setView}/>;
-    if(tab==="plan")      return <Wochenplan slots={INIT_SLOTS} teachers={teachers} students={students}/>;
-    if(tab==="students")  return <Schueler students={students} setStudents={setStudents} teachers={teachers} setView={setView}/>;
-    if(tab==="teachers")  return <Lehrkraefte teachers={teachers} setTeachers={setTeachers} students={students} apts={apts} setView={setView}/>;
-    if(tab==="billing")   return <Abrechnung teachers={teachers} students={students} apts={apts} setApts={setApts}/>;
-    if(tab==="stunden")   return <Stunden apts={apts} setApts={setApts} teachers={teachers} students={students} setView={setView}/>;
+    const t=planLocId?"plan":tab;
+    if(t==="dashboard") return <Dashboard apts={filteredApts} teachers={filteredTeachers} students={filteredStudents} slots={INIT_SLOTS} setTab={navTab} setView={setView}/>;
+    if(t==="plan")      return <Wochenplan slots={INIT_SLOTS} teachers={teachers} students={students} initialLocId={planLocId||(user?.locationId)||"heerdt"}/>;
+    if(t==="students")  return <Schueler students={filteredStudents} setStudents={setStudents} teachers={filteredTeachers} setView={setView}/>;
+    if(t==="teachers")  return <Lehrkraefte teachers={filteredTeachers} setTeachers={setTeachers} students={filteredStudents} apts={filteredApts} setView={setView}/>;
+    if(t==="billing")   return <Abrechnung teachers={filteredTeachers} students={filteredStudents} apts={filteredApts} setApts={setApts}/>;
+    if(t==="stunden")   return <Stunden apts={filteredApts} setApts={setApts} teachers={filteredTeachers} students={filteredStudents} setView={setView}/>;
     return null;
   };
 
-  if(!user) return <Login onLogin={setUser}/>;
+  if(!user) return <Login onLogin={u=>{setUser(u);setTab("dashboard");}}/>;
 
   return <>
     <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:${C.bg};}button:active{opacity:.85;}input,select,textarea{font-family:${FF.body};}`}</style>
     <div style={{display:"flex",minHeight:"100vh"}}>
-      <Sidebar tab={tab} setTab={navTab} onLogout={()=>{setUser(null);setView(null);}} view={view}/>
+      <Sidebar tab={tab} setTab={navTab} onLogout={()=>{setUser(null);setView(null);}} view={view} user={user} slots={INIT_SLOTS}/>
       <main style={{flex:1,overflow:"auto",background:C.bg}}>{renderTab()}</main>
     </div>
   </>;
