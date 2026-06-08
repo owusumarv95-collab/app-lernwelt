@@ -1,1336 +1,3283 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Calendar, Clock, Users, User, Home as HomeIcon,
+  Calendar, Clock, Users, User, Home as HomeIcon, Settings,
   ChevronRight, ChevronLeft, BookOpen, MapPin, Search,
   Check, LogOut, Bell, ArrowLeft, X, Plus, Minus,
-  GraduationCap, AlertCircle, DollarSign, Edit2, Trash2,
-  Lock, ShieldCheck, CheckCircle2, Download, Play, Square,
-  UserPlus, Eye, EyeOff, TrendingUp, FileText,
+  GraduationCap, FileText, AlertCircle, Wifi,
+  BatteryFull, Signal, Coffee, Sparkles,
+  UserPlus, CheckCircle2, Play, Square, DollarSign,
+  Download, TrendingUp, Briefcase,
+  Edit2, Trash2, Lock, ShieldCheck, History, Repeat,
 } from "lucide-react";
 
-/* =========================================================
-   DESIGN — Lernwelt Orange + Dunkelblau
-   Schriftart: system-ui mit Display-Gewichten (kein Google Fonts)
-   ========================================================= */
+
+// Demo-Modus: kein Supabase
+
+
 const C = {
-  bg:         "#F5F7FB",
-  surface:    "#FFFFFF",
-  surfaceAlt: "#EEF2F9",
-  border:     "#DDE3EF",
-  primary:    "#1A3A6B",
-  primaryLi:  "#2A5298",
-  primaryTint:"#EBF0FA",
-  accent:     "#E8650A",
-  accentDk:   "#C4520A",
-  accentLi:   "#F07820",
-  accentTint: "#FEF0E7",
-  success:    "#16A34A",
-  warn:       "#D97706",
-  danger:     "#DC2626",
-  info:       "#2563EB",
-  textHi:     "#0F1B2D",
-  text:       "#374151",
-  textDim:    "#6B7280",
-  textVeryDim:"#9CA3AF",
+  bg: "#0A1628", bgGrad: "linear-gradient(180deg, #0E1A2F 0%, #0A1628 100%)",
+  surface: "#152339", surfaceHi: "#1D2D47", surfaceLo: "#0F1B2D",
+  border: "#2A3B57", borderHi: "#3D5275",
+  primary: "#F49156", primaryGrad: "linear-gradient(135deg, #F4A261 0%, #E76F51 100%)",
+  success: "#5BCFB1", warn: "#F4D35E", danger: "#E76F51", info: "#7AB8E8",
+  textHi: "#F5F1E8", text: "#D4D8E0", textDim: "#8A95A8", textVeryDim: "#5B6B85",
 };
 
-/* Einheitliche Schrift — kein Google Fonts, kein Fallback-Problem */
 const FF = {
-  display: "-apple-system, 'Segoe UI', system-ui, sans-serif",
-  body:    "-apple-system, 'Segoe UI', system-ui, sans-serif",
+  display: '"Bricolage Grotesque", "Outfit", system-ui, sans-serif',
+  body: '"Manrope", system-ui, sans-serif',
 };
 
-/* =========================================================
-   STAMMDATEN
-   ========================================================= */
+const ALL_SUBJECTS = ["Mathe", "Deutsch", "Englisch", "Französisch", "Latein", "Spanisch", "Physik", "Chemie", "Biologie", "LRS", "Dyskalkulie", "ZAP"];
+const TODAY_LABEL = "Mittwoch, 29. April";
+const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr"];
+const WEEKDAYS_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+const HOURLY_RATE = 22; // EUR — demo rate for payroll display
+const ADMIN_PIN = "1234"; // Demo PIN for billing confirmation
+
 const LOCATIONS = [
-  { id: "heerdt",  name: "Düsseldorf Heerdt",  short: "Heerdt",  color: "#1A3A6B" },
-  { id: "garath",  name: "Düsseldorf Garath",  short: "Garath",  color: "#2563EB" },
+  { id: "heerdt",  name: "Dusseldorf Heerdt",  short: "Heerdt",  color: "#1A3A6B" },
+  { id: "garath",  name: "Dusseldorf Garath",  short: "Garath",  color: "#2563EB" },
   { id: "neuss-i", name: "Neuss Innenstadt",   short: "Neuss-I", color: "#E8650A" },
   { id: "neuss-f", name: "Neuss Furth",        short: "Neuss-F", color: "#16A34A" },
 ];
-const ROOMS = {
-  heerdt:   [{id:"h1",name:"Raum 1"},{id:"h2",name:"Raum 2"},{id:"h3",name:"Raum 3"}],
-  garath:   [{id:"g1",name:"Raum 1"},{id:"g2",name:"Raum 2"},{id:"g3",name:"Raum 3"}],
-  "neuss-i":[{id:"n1",name:"Raum 1"},{id:"n2",name:"Raum 2"}],
-  "neuss-f":[{id:"f1",name:"Raum 1"},{id:"f2",name:"Raum 2"}],
+
+const ROOMS_BY_LOCATION = {
+  "heerdt":  [{ id: "h1", name: "Raum 1" },{ id: "h2", name: "Raum 2" },{ id: "h3", name: "Raum 3" }],
+  "garath":  [{ id: "g1", name: "Raum 1" },{ id: "g2", name: "Raum 2" },{ id: "g3", name: "Raum 3" }],
+  "neuss-i": [{ id: "n1", name: "Raum 1" },{ id: "n2", name: "Raum 2" }],
+  "neuss-f": [{ id: "f1", name: "Raum 1" },{ id: "f2", name: "Raum 2" }],
 };
-const ALL_SUBJECTS = ["Mathe","Deutsch","Englisch","Franzoesisch","Spanisch","Latein","Physik","Chemie","Biologie","Informatik","Geschichte","DaZ","LRS","Dyskalkulie","ZP10","Abitur","Vorschule"];
-const WEEKDAYS = ["Mo","Di","Mi","Do","Fr"];
-const WEEKDAYS_LONG = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag"];
-const TEACHER_COLORS = ["#1A3A6B","#E8650A","#2563EB","#16A34A","#7C3AED","#DB2777","#D97706","#0891B2"];
 
-const today = new Date();
-const dk = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const todayKey = dk(today);
-const fmtEur = n => `${Number(n).toFixed(2).replace(".",",")} €`;
-const initials = name => (name||"").split(" ").filter(Boolean).map(p=>p[0]).join("").slice(0,2).toUpperCase();
-const appDay = d => { const x=d.getDay(); return x===0?6:x-1; };
+// Possible start times — every 30 min from 13:00 to 18:00 (last course ends at 19:00)
+const TIME_SLOTS = ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"];
+const COURSE_DURATION = 60; // minutes — fixed for all courses
 
-/* =========================================================
-   STATE — alles in einem zentralen Store
-   ========================================================= */
+const timeToMin = (t) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+};
+// Two slots conflict if their time ranges overlap (60-min courses)
+const slotsConflict = (timeA, timeB) => Math.abs(timeToMin(timeA) - timeToMin(timeB)) < COURSE_DURATION;
+
+// --- Echte Datums-Helfer (für Stunden aus dem Wochenplan) ---
+const appDayFromJS = (d) => { const x = d.getDay(); return x === 0 ? 6 : x - 1; }; // 0=Mo .. 6=So
+const isoDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const mondayOf = (d) => {
+  const x = new Date(d); const dow = x.getDay();
+  x.setDate(x.getDate() + (dow === 0 ? -6 : 1 - dow));
+  x.setHours(0,0,0,0); return x;
+};
+const hhmm = (d) => `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+const isoWeek = (date) => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+};
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const TEACHERS = [
+  { id: 1, name: "Herr Stolle",   short: "ST", subjects: ["Mathe", "Physik", "Informatik"], color: "#F49156", role: "teacher", email: "stolle@lernwelt.de", rate: 25, locationId: "heerdt" },
+  { id: 2, name: "Frau Yilmaz",   short: "YI", subjects: ["Deutsch", "DaZ", "LRS"],         color: "#5BCFB1", role: "teacher", email: "yilmaz@lernwelt.de", rate: 24, locationId: "heerdt" },
+  { id: 3, name: "Herr Kovac",    short: "KO", subjects: ["Englisch", "Franzoesisch"],       color: "#7AB8E8", role: "teacher", email: "kovac@lernwelt.de",  rate: 23, locationId: "garath" },
+  { id: 4, name: "Frau Nguyen",   short: "NG", subjects: ["Mathe", "Dyskalkulie", "ZP10"],  color: "#F4D35E", role: "teacher", email: "nguyen@lernwelt.de", rate: 26, locationId: "neuss-i" },
+  { id: 5, name: "Herr Schreiber",short: "SC", subjects: ["Chemie", "Biologie"],            color: "#A78BFA", role: "teacher", email: "schreiber@lernwelt.de", rate: 24, locationId: "neuss-i" },
+  { id: 6, name: "Frau Becker",   short: "BE", subjects: ["Vorschule", "Deutsch"],          color: "#F472B6", role: "teacher", email: "becker@lernwelt.de",  rate: 22, locationId: "neuss-f" },
+];
+
+const ADMIN_USER = {
+  id: 99, name: "Admin", short: "AD", color: "#E76F51",
+  role: "admin", email: "admin@lernwelt.de",
+};
+
+// Demo-Login Nutzer (alle)
 const DEMO_USERS = [
-  { id: "admin_all",     name: "Herr Siebert",   short: "SI", role: "superadmin", locationId: null,      email: "siebert@lernwelt.de",   color: "#1A3A6B", title: "Geschaeftsfuehrung" },
-  { id: "admin_heerdt",  name: "Frau Kowollik",  short: "KW", role: "loc_admin",  locationId: "heerdt",  email: "heerdt@lernwelt.de",    color: "#2563EB", title: "Standortleitung Heerdt" },
-  { id: "admin_garath",  name: "Herr Dimitriou", short: "DI", role: "loc_admin",  locationId: "garath",  email: "garath@lernwelt.de",    color: "#E8650A", title: "Standortleitung Garath" },
-  { id: "admin_neussi",  name: "Frau Sahin",     short: "SA", role: "loc_admin",  locationId: "neuss-i", email: "neuss-i@lernwelt.de",   color: "#16A34A", title: "Standortleitung Neuss-I" },
-  { id: "admin_neussf",  name: "Herr Wolters",   short: "WO", role: "loc_admin",  locationId: "neuss-f", email: "neuss-f@lernwelt.de",   color: "#D97706", title: "Standortleitung Neuss-F" },
+  { id: 99, name: "Admin",          short: "AD", color: "#E76F51", role: "admin",   email: "admin@lernwelt.de",       password: "demo1234" },
+  { id: 1,  name: "Herr Stolle",    short: "ST", color: "#F49156", role: "teacher", email: "stolle@lernwelt.de",      password: "demo1234" },
+  { id: 2,  name: "Frau Yilmaz",    short: "YI", color: "#5BCFB1", role: "teacher", email: "yilmaz@lernwelt.de",      password: "demo1234" },
+  { id: 3,  name: "Herr Kovac",     short: "KO", color: "#7AB8E8", role: "teacher", email: "kovac@lernwelt.de",       password: "demo1234" },
+  { id: 4,  name: "Frau Nguyen",    short: "NG", color: "#F4D35E", role: "teacher", email: "nguyen@lernwelt.de",      password: "demo1234" },
+  { id: 5,  name: "Herr Schreiber", short: "SC", color: "#A78BFA", role: "teacher", email: "schreiber@lernwelt.de",   password: "demo1234" },
+  { id: 6,  name: "Frau Becker",    short: "BE", color: "#F472B6", role: "teacher", email: "becker@lernwelt.de",      password: "demo1234" },
 ];
 
+const INITIAL_STUDENTS = [
+  // Heerdt
+  { id: 1,  name: "Mia Hoffmann",   short: "MH", grade: 9,  subjects: ["Mathe"],          teacherId: 1, locationId: "heerdt",  focus: "ZP10-Vorbereitung", since: "Sep 2024", notes: "Algebra sicher, Stochastik noch schwach." },
+  { id: 2,  name: "Leon Mueller",   short: "LM", grade: 5,  subjects: ["Deutsch", "LRS"], teacherId: 2, locationId: "heerdt",  focus: "LRS-Foerderung",   since: "Jan 2025", notes: "Grosser Fortschritt beim Lesen." },
+  { id: 3,  name: "Noah Bauer",     short: "NB", grade: 11, subjects: ["Mathe", "Physik"],teacherId: 1, locationId: "heerdt",  focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Klausurniveau erreicht." },
+  { id: 4,  name: "Amira Hassan",   short: "AH", grade: 5,  subjects: ["Deutsch", "DaZ"],teacherId: 2, locationId: "heerdt",  focus: "Integration",      since: "Jan 2025", notes: "Sprache wird deutlich besser." },
+  // Garath
+  { id: 5,  name: "Sophia Kaya",    short: "SK", grade: 7,  subjects: ["Englisch"],       teacherId: 3, locationId: "garath",  focus: "Grammatik",        since: "Okt 2024", notes: "Vocabulary sehr gut." },
+  { id: 6,  name: "Tim Weber",      short: "TW", grade: 10, subjects: ["Englisch"],       teacherId: 3, locationId: "garath",  focus: "Abitur-Niveau",    since: "Sep 2024", notes: "Speaking sehr stark." },
+  { id: 7,  name: "Hana Al-Rashid", short: "HA", grade: 6,  subjects: ["Deutsch", "DaZ"],teacherId: 3, locationId: "garath",  focus: "Sprachfoerderung", since: "Feb 2025", notes: "Toll integriert." },
+  // Neuss-I
+  { id: 8,  name: "Lena Braun",     short: "LB", grade: 4,  subjects: ["Mathe", "Dyskalkulie"], teacherId: 4, locationId: "neuss-i", focus: "Dyskalkulie", since: "Okt 2024", notes: "Mengenverstaendnis waechst." },
+  { id: 9,  name: "Jonas Klein",    short: "JK", grade: 9,  subjects: ["Mathe"],          teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Sep 2024", notes: "Stochastik verbessert." },
+  { id: 10, name: "Lukas Fischer",  short: "LF", grade: 8,  subjects: ["Chemie"],         teacherId: 5, locationId: "neuss-i", focus: "Klausur-Prep",     since: "Nov 2024", notes: "Organische Chemie schwierig." },
+  { id: 11, name: "Nele Wagner",    short: "NW", grade: 9,  subjects: ["Mathe"],          teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Mär 2025", notes: "Sehr ehrgeizig." },
+  // Neuss-F
+  { id: 12, name: "Emma Schaefer",  short: "ES", grade: 3,  subjects: ["Vorschule"],      teacherId: 6, locationId: "neuss-f", focus: "Schulstart",       since: "Mär 2025", notes: "Sehr fleissig." },
+  { id: 13, name: "Felix Richter",  short: "FR", grade: 12, subjects: ["Mathe"],          teacherId: 4, locationId: "neuss-f", focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Auf Kurs." },
+];
 
-const INIT_TEACHERS = [
-  {id:"t1",name:"Herr Stolle",    short:"ST",subjects:["Mathe","Physik","Informatik"],color:"#1A3A6B",rate:25,email:"stolle@lernwelt.de",role:"teacher"},
-  {id:"t2",name:"Frau Yilmaz",    short:"YI",subjects:["Deutsch","DaZ","LRS"],        color:"#E8650A",rate:24,email:"yilmaz@lernwelt.de",role:"teacher"},
-  {id:"t3",name:"Herr Kovac",     short:"KO",subjects:["Englisch","Franzoesisch"],     color:"#2563EB",rate:23,email:"kovac@lernwelt.de",role:"teacher"},
-  {id:"t4",name:"Frau Nguyen",    short:"NG",subjects:["Mathe","Dyskalkulie","ZP10"], color:"#16A34A",rate:26,email:"nguyen@lernwelt.de",role:"teacher"},
-  {id:"t5",name:"Herr Schreiber", short:"SC",subjects:["Chemie","Biologie","Latein"], color:"#7C3AED",rate:24,email:"schreiber@lernwelt.de",role:"teacher"},
-  {id:"t6",name:"Frau Becker",    short:"BE",subjects:["Vorschule","Deutsch","LRS"],  color:"#DB2777",rate:22,email:"becker@lernwelt.de",role:"teacher"},
+// status: scheduled | checked-in | completed
+// completedDur in min, only set when checked out
+const INITIAL_APPOINTMENTS = [
+  // Today, Sarah
+  { id: 101, day: 2, date: "29.04.", time: "14:00", plannedDur: 45, studentId: 2, teacherId: 1, subject: "Englisch + LRS", room: "Raum 1", status: "completed", completedDur: 45, notes: "Lesetraining gemacht.", checkedInAt: "13:58", checkedOutAt: "14:43", billed: false },
+  { id: 102, day: 2, date: "29.04.", time: "15:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "checked-in", completedDur: null, notes: "", checkedInAt: "14:58", checkedOutAt: null, billed: false },
+  { id: 103, day: 2, date: "29.04.", time: "16:30", plannedDur: 60, studentId: 3, teacherId: 1, subject: "Englisch", room: "Raum 2", status: "scheduled", completedDur: null, notes: "", billed: false },
+  { id: 104, day: 2, date: "29.04.", time: "17:45", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "scheduled", completedDur: null, notes: "", billed: false },
+  // Earlier this week, Sarah
+  { id: 110, day: 0, date: "27.04.", time: "15:00", plannedDur: 60, studentId: 5, teacherId: 1, subject: "Englisch", room: "Raum 1", status: "completed", completedDur: 60, notes: "Vocabulary-Test bestanden.", checkedInAt: "14:55", checkedOutAt: "15:55", billed: false },
+  { id: 111, day: 0, date: "27.04.", time: "16:30", plannedDur: 60, studentId: 6, teacherId: 1, subject: "Englisch", room: "Raum 2", status: "completed", completedDur: 65, notes: "Diskussion Climate Change.", checkedInAt: "16:28", checkedOutAt: "17:33", billed: false },
+  { id: 112, day: 1, date: "28.04.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "completed", completedDur: 60, notes: "Erörterung geübt.", checkedInAt: "14:00", checkedOutAt: "15:00", billed: false },
+  { id: 113, day: 1, date: "28.04.", time: "16:00", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "completed", completedDur: 55, notes: "ZAP-Probeklausur korrigiert.", checkedInAt: "16:02", checkedOutAt: "16:57", billed: false },
+  // Other teachers — today
+  { id: 201, day: 2, date: "29.04.", time: "14:00", plannedDur: 60, studentId: 7, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "checked-in", completedDur: null, notes: "", checkedInAt: "14:01", billed: false },
+  { id: 202, day: 2, date: "29.04.", time: "15:30", plannedDur: 60, studentId: 10, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "scheduled", billed: false },
+  { id: 203, day: 2, date: "29.04.", time: "16:30", plannedDur: 60, studentId: 11, teacherId: 2, subject: "Physik", room: "Raum 4", status: "scheduled", billed: false },
+  { id: 301, day: 2, date: "29.04.", time: "14:30", plannedDur: 45, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "completed", completedDur: 50, notes: "Bruchrechnen vertieft.", checkedInAt: "14:30", checkedOutAt: "15:20", billed: false },
+  { id: 302, day: 2, date: "29.04.", time: "15:30", plannedDur: 60, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "scheduled", billed: false },
+  { id: 401, day: 2, date: "29.04.", time: "15:00", plannedDur: 60, studentId: 9, teacherId: 4, subject: "Französisch", room: "Raum 5", status: "checked-in", completedDur: null, notes: "", checkedInAt: "15:00", billed: false },
+  // Earlier this month — for billing demo (already billed last month, fresh this month)
+  { id: 501, day: -1, date: "22.04.", time: "15:00", plannedDur: 60, studentId: 5, teacherId: 1, subject: "Englisch", room: "Raum 1", status: "completed", completedDur: 60, notes: "Reading.", billed: false },
+  { id: 502, day: -1, date: "22.04.", time: "16:30", plannedDur: 60, studentId: 6, teacherId: 1, subject: "Englisch", room: "Raum 2", status: "completed", completedDur: 60, notes: "Speaking.", billed: false },
+  { id: 503, day: -1, date: "23.04.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "completed", completedDur: 60, notes: "", billed: false },
+  { id: 504, day: -1, date: "23.04.", time: "15:00", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "completed", completedDur: 60, notes: "", billed: false },
+  { id: 510, day: -1, date: "21.04.", time: "14:00", plannedDur: 60, studentId: 7, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "completed", completedDur: 60, notes: "", billed: false },
+  { id: 511, day: -1, date: "22.04.", time: "16:00", plannedDur: 60, studentId: 10, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "completed", completedDur: 60, notes: "", billed: false },
+  { id: 512, day: -1, date: "23.04.", time: "16:30", plannedDur: 60, studentId: 11, teacherId: 2, subject: "Physik", room: "Raum 4", status: "completed", completedDur: 60, notes: "", billed: false },
+  { id: 520, day: -1, date: "22.04.", time: "14:30", plannedDur: 45, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "completed", completedDur: 45, notes: "", billed: false },
+  { id: 521, day: -1, date: "24.04.", time: "15:00", plannedDur: 60, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "completed", completedDur: 60, notes: "", billed: false },
+  { id: 530, day: -1, date: "23.04.", time: "15:00", plannedDur: 60, studentId: 9, teacherId: 4, subject: "Französisch", room: "Raum 5", status: "completed", completedDur: 60, notes: "", billed: false },
+  // March (already billed)
+  { id: 601, day: -2, date: "15.03.", time: "15:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "completed", completedDur: 60, notes: "", billed: true, billedMonth: "März" },
+  { id: 602, day: -2, date: "16.03.", time: "16:00", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "completed", completedDur: 60, notes: "", billed: true, billedMonth: "März" },
 ];
-const INIT_STUDENTS = [
-  {id:"s1", name:"Mia Hoffmann",  short:"MH",grade:9, subjects:["Mathe"],         teacherId:"t1",locationId:"heerdt",  focus:"ZP10-Vorbereitung",since:"Sep 2024",notes:"Sehr motiviert, Algebra läuft gut."},
-  {id:"s2", name:"Leon Mueller",   short:"LM",grade:5, subjects:["Deutsch","LRS"], teacherId:"t2",locationId:"heerdt",  focus:"LRS-Förderung",    since:"Jan 2025",notes:"Große Fortschritte beim Lesen."},
-  {id:"s3", name:"Sophia Kaya",   short:"SK",grade:7, subjects:["Englisch"],      teacherId:"t3",locationId:"garath",  focus:"Grammatik",        since:"Okt 2024",notes:"Vocabulary sehr gut."},
-  {id:"s4", name:"Noah Bauer",    short:"NB",grade:11,subjects:["Mathe","Physik"],teacherId:"t1",locationId:"heerdt",  focus:"Abi-Vorbereitung", since:"Aug 2024",notes:"Klausurniveau erreicht."},
-  {id:"s5", name:"Emma Schaefer",  short:"ES",grade:3, subjects:["Vorschule"],     teacherId:"t6",locationId:"neuss-f", focus:"Schulstart",       since:"Mär 2025",notes:"Sehr fleißig."},
-  {id:"s6", name:"Lukas Fischer", short:"LF",grade:8, subjects:["Chemie"],        teacherId:"t5",locationId:"neuss-i", focus:"Klausur-Prep",     since:"Nov 2024",notes:"Organische Chemie schwierig."},
-  {id:"s7", name:"Hana Al-Rashid",short:"HA",grade:6, subjects:["Deutsch","DaZ"], teacherId:"t2",locationId:"garath",  focus:"Sprachförderung",  since:"Feb 2025",notes:"Deutsch wird deutlich besser."},
-  {id:"s8", name:"Tim Weber",     short:"TW",grade:10,subjects:["Englisch"],      teacherId:"t3",locationId:"garath",  focus:"Abitur-Niveau",    since:"Sep 2024",notes:"Speaking sehr stark."},
-  {id:"s9", name:"Lena Braun",    short:"LB",grade:4, subjects:["Mathe","Dyskalkulie"],teacherId:"t4",locationId:"neuss-i",focus:"Dyskalkulie",since:"Okt 2024",notes:"Mengenverständnis wächst."},
-  {id:"s10",name:"Felix Richter", short:"FR",grade:12,subjects:["Mathe"],         teacherId:"t4",locationId:"neuss-f", focus:"Abi-Vorbereitung", since:"Aug 2024",notes:"Auf Kurs."},
-  {id:"s11",name:"Amira Hassan",  short:"AH",grade:5, subjects:["Deutsch","DaZ"], teacherId:"t2",locationId:"heerdt",  focus:"Integration",      since:"Jan 2025",notes:"Toll integriert."},
-  {id:"s12",name:"Jonas Klein",   short:"JK",grade:9, subjects:["Latein"],        teacherId:"t5",locationId:"neuss-i", focus:"ZP10",             since:"Sep 2024",notes:"Grammatik solide."},
+
+// Schedule slots — the new admin-created weekly plan
+// Each slot: who teaches whom, where, when (60 min duration)
+// type: "einzel" | "gruppe"
+const INITIAL_SCHEDULE_SLOTS = [
+  // Heerdt — Montag
+  { id: "s001", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1, 3], type: "gruppe", notes: "" },
+  { id: "s002", day: 0, time: "15:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [2],    type: "einzel", notes: "" },
+  { id: "s003", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h2", teacherId: 2, studentIds: [4],    type: "einzel", notes: "" },
+  // Garath — Montag
+  { id: "s004", day: 0, time: "14:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5, 6], type: "gruppe", notes: "" },
+  { id: "s005", day: 0, time: "16:00", locationId: "garath",  roomId: "g2", teacherId: 3, studentIds: [7],    type: "einzel", notes: "" },
+  // Neuss-I — Montag
+  { id: "s006", day: 0, time: "15:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8, 9], type: "gruppe", notes: "" },
+  { id: "s007", day: 0, time: "16:30", locationId: "neuss-i", roomId: "n2", teacherId: 5, studentIds: [10],   type: "einzel", notes: "" },
+  // Neuss-F — Montag
+  { id: "s008", day: 0, time: "14:00", locationId: "neuss-f", roomId: "f1", teacherId: 6, studentIds: [12],   type: "einzel", notes: "" },
+  { id: "s009", day: 0, time: "15:30", locationId: "neuss-f", roomId: "f2", teacherId: 4, studentIds: [13],   type: "einzel", notes: "" },
+  // Dienstag
+  { id: "s010", day: 1, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1],    type: "einzel", notes: "" },
+  { id: "s011", day: 1, time: "15:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [6],    type: "einzel", notes: "" },
+  { id: "s012", day: 1, time: "14:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [9,11], type: "gruppe", notes: "" },
+  // Mittwoch
+  { id: "s013", day: 2, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 2, studentIds: [2, 4], type: "gruppe", notes: "" },
+  { id: "s014", day: 2, time: "15:00", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5],    type: "einzel", notes: "" },
+  { id: "s015", day: 2, time: "16:00", locationId: "neuss-i", roomId: "n2", teacherId: 5, studentIds: [10],   type: "einzel", notes: "" },
+  { id: "s016", day: 2, time: "14:30", locationId: "neuss-f", roomId: "f1", teacherId: 6, studentIds: [12],   type: "einzel", notes: "" },
+  // Donnerstag
+  { id: "s017", day: 3, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [3],    type: "einzel", notes: "" },
+  { id: "s018", day: 3, time: "15:30", locationId: "garath",  roomId: "g2", teacherId: 3, studentIds: [7],    type: "einzel", notes: "" },
+  { id: "s019", day: 3, time: "17:00", locationId: "neuss-f", roomId: "f2", teacherId: 4, studentIds: [13],   type: "einzel", notes: "" },
+  // Freitag
+  { id: "s020", day: 4, time: "14:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1, 3], type: "gruppe", notes: "" },
+  { id: "s021", day: 4, time: "16:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8],    type: "einzel", notes: "" },
 ];
-const mkApt = (id,teacherId,studentIds,locationId,room,time,status,subject,offset=0) => {
-  const d = new Date(today); d.setDate(d.getDate()-offset);
-  return {id,teacherId,studentIds,locationId,room,time,subject,
-    dateKey:dk(d), status,
-    completedDur: status==="completed"?60:null,
-    checkedInAt: status!=="scheduled"?"14:00":null,
-    checkedOutAt: status==="completed"?"15:00":null,
-    _checkedInTs: status==="checked-in"?Date.now()-12*60*1000:null,
-    billed: offset>3, billedMonth: offset>3?"Mai 2025":null,
+
+// --- Übersetzung zwischen DB-Spalten (snake_case) und App-Form (camelCase) ---
+const monthLabel = (d) => d ? new Date(d).toLocaleDateString("de-DE", { month: "short", year: "numeric" }) : "";
+// Kürzel aus Namen ableiten, falls keins hinterlegt ist ("Sarah Klein" -> "SK")
+const initials = (name) => {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+const teacherFromDB = (r) => ({ ...r, short: r.short || initials(r.name) });
+const studentFromDB = (r) => ({
+  id: r.id, name: r.name, short: r.short, grade: r.grade,
+  subjects: r.subjects || [], teacherId: r.teacher_id,
+  focus: r.focus, since: monthLabel(r.since), notes: r.notes,
+});
+const slotFromDB = (r) => ({
+  id: r.id, day: r.weekday, time: (r.start_time || "").slice(0, 5),
+  locationId: r.location_id, roomId: r.room_id, teacherId: r.teacher_id,
+  studentIds: r.student_ids || [], type: r.type, notes: r.notes,
+  onDate: r.on_date || null,
+});
+// Termin (erfasste/laufende Stunde) — eine Zeile pro Slot+Datum, mit der ganzen Gruppe.
+// room/type werden bewusst NICHT gesetzt: die kommen frisch aus dem Slot (in buildSlotLesson).
+const appointmentFromDB = (r) => {
+  const start = r.starts_at ? new Date(r.starts_at) : null;
+  return {
+    id: r.id,
+    slotId: r.slot_id,
+    dateKey: start ? isoDateKey(start) : null,
+    day: start ? appDayFromJS(start) : null,
+    date: start ? start.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" }) : "",
+    time: start ? hhmm(start) : "",
+    teacherId: r.teacher_id,
+    roomId: r.room_id,
+    studentIds: r.student_ids || [],
+    plannedDur: r.planned_duration || 60,
+    status: r.status,
+    checkedInAt: r.checked_in_at ? hhmm(new Date(r.checked_in_at)) : null,
+    checkedOutAt: r.checked_out_at ? hhmm(new Date(r.checked_out_at)) : null,
+    completedDur: r.completed_duration || null,
+    _checkedInTs: r.checked_in_at ? Date.parse(r.checked_in_at) : null,
+    heldMethod: r.held_method || null,
+    notes: r.notes || "",
+    billed: r.billed || false,
+    billedMonth: r.billed_month || null,
   };
 };
-const INIT_APTS = [
-  mkApt("a1","t1",["s1","s4"],"heerdt","Raum 1","14:00","completed","Mathe"),
-  mkApt("a2","t2",["s2"],"heerdt","Raum 2","15:00","checked-in","Deutsch / LRS"),
-  mkApt("a3","t1",["s4"],"heerdt","Raum 1","16:00","scheduled","Physik"),
-  mkApt("a4","t3",["s3","s8"],"garath","Raum 1","14:30","completed","Englisch"),
-  mkApt("a5","t2",["s7"],"garath","Raum 2","15:30","scheduled","DaZ"),
-  mkApt("a6","t5",["s6"],"neuss-i","Raum 1","15:00","completed","Chemie"),
-  mkApt("a7","t4",["s9"],"neuss-i","Raum 2","16:00","scheduled","Mathe / Dyskalkulie"),
-  mkApt("a8","t6",["s5"],"neuss-f","Raum 1","14:00","completed","Vorschule"),
-  mkApt("a9","t4",["s10"],"neuss-f","Raum 2","17:00","scheduled","Mathe"),
-  ...Array.from({length:16},(_, i)=>mkApt(`p${i}`,"t"+((i%6)+1),[`s${(i%12)+1}`],LOCATIONS[i%4].id,"Raum 1",["14:00","15:00","16:00"][i%3],"completed",ALL_SUBJECTS[i%10],i+1)),
-];
-const INIT_SLOTS = [
-  {id:"sl1",day:0,time:"14:00",locationId:"heerdt", roomId:"h1",teacherId:"t1",studentIds:["s1","s4"],type:"gruppe"},
-  {id:"sl2",day:0,time:"15:00",locationId:"heerdt", roomId:"h2",teacherId:"t2",studentIds:["s2"],    type:"einzel"},
-  {id:"sl3",day:0,time:"16:00",locationId:"heerdt", roomId:"h1",teacherId:"t1",studentIds:["s4"],    type:"einzel"},
-  {id:"sl4",day:0,time:"14:30",locationId:"garath", roomId:"g1",teacherId:"t3",studentIds:["s3","s8"],type:"gruppe"},
-  {id:"sl5",day:0,time:"15:30",locationId:"garath", roomId:"g2",teacherId:"t2",studentIds:["s7"],    type:"einzel"},
-  {id:"sl6",day:0,time:"15:00",locationId:"neuss-i",roomId:"n1",teacherId:"t5",studentIds:["s6"],    type:"einzel"},
-  {id:"sl7",day:0,time:"16:00",locationId:"neuss-i",roomId:"n2",teacherId:"t4",studentIds:["s9"],    type:"einzel"},
-  {id:"sl8",day:0,time:"14:00",locationId:"neuss-f",roomId:"f1",teacherId:"t6",studentIds:["s5"],    type:"einzel"},
-  {id:"sl9",day:0,time:"17:00",locationId:"neuss-f",roomId:"f2",teacherId:"t4",studentIds:["s10"],   type:"einzel"},
-  {id:"sl10",day:1,time:"14:00",locationId:"heerdt", roomId:"h1",teacherId:"t1",studentIds:["s1"],   type:"einzel"},
-  {id:"sl11",day:1,time:"15:30",locationId:"garath", roomId:"g1",teacherId:"t3",studentIds:["s8"],   type:"einzel"},
-  {id:"sl12",day:2,time:"14:00",locationId:"neuss-i",roomId:"n1",teacherId:"t4",studentIds:["s9","s12"],type:"gruppe"},
-  {id:"sl13",day:2,time:"16:00",locationId:"heerdt", roomId:"h3",teacherId:"t5",studentIds:["s6"],   type:"einzel"},
-  {id:"sl14",day:3,time:"15:00",locationId:"garath", roomId:"g2",teacherId:"t2",studentIds:["s2","s11"],type:"gruppe"},
-  {id:"sl15",day:3,time:"17:00",locationId:"neuss-f",roomId:"f1",teacherId:"t4",studentIds:["s10"],  type:"einzel"},
-  {id:"sl16",day:4,time:"14:30",locationId:"heerdt", roomId:"h1",teacherId:"t1",studentIds:["s1","s4"],type:"gruppe"},
-  {id:"sl17",day:4,time:"16:00",locationId:"neuss-i",roomId:"n2",teacherId:"t3",studentIds:["s3"],   type:"einzel"},
-];
+const billingLogFromDB = (r) => {
+  const d = r.created_at ? new Date(r.created_at) : new Date();
+  return {
+    id: r.id, teacherId: r.teacher_id, teacherName: r.teacher_name,
+    month: r.month, hours: Number(r.hours) || 0, cost: Number(r.cost) || 0,
+    billedBy: r.billed_by, timestamp: d.getTime(),
+    formatted: d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
+  };
+};
+const EMPTY_STUDENT_DRAFT = { name: "", grade: "", subjects: [], focus: "", notes: "", teacherId: null };
 
-/* =========================================================
-   PRIMITIVES
-   ========================================================= */
-function Avatar({short,color,size=32}){
-  return <div style={{width:size,height:size,borderRadius:size/2,background:color||C.primary,display:"grid",placeItems:"center",color:"#fff",fontWeight:800,fontSize:size*0.36,fontFamily:FF.display,flexShrink:0,letterSpacing:-0.5}}>{short}</div>;
-}
-function Badge({children,color=C.primary}){
-  return <span style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:6,background:color+"18",color,fontSize:11,fontWeight:700,letterSpacing:0.3}}>{children}</span>;
-}
-function LocBadge({locationId}){
-  const l=LOCATIONS.find(x=>x.id===locationId); if(!l) return null;
-  return <Badge color={l.color}>{l.short}</Badge>;
-}
-function Card({children,padding=20,accent,onClick,hover}){
-  const [hov,setHov]=useState(false);
-  return <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{background:C.surface,border:`1px solid ${hov&&hover?C.primary:C.border}`,borderRadius:14,padding,position:"relative",overflow:"hidden",boxShadow:hov&&hover?"0 8px 24px rgba(26,58,107,.12)":"0 1px 4px rgba(26,58,107,.05)",cursor:onClick?"pointer":"default",transition:"all .2s"}}>
-    {accent&&<div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent}}/>}
-    {children}
-  </div>;
-}
-function SecTitle({children,action}){
-  return <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-    <div style={{fontSize:11,fontWeight:800,color:C.textDim,letterSpacing:1.5,textTransform:"uppercase"}}>{children}</div>
-    {action}
-  </div>;
-}
-function Btn({children,onClick,icon:Icon,color,outline,small,disabled}){
-  const bg=outline?"transparent":(color||`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`);
-  return <button onClick={onClick} disabled={disabled} style={{padding:small?"8px 14px":"12px 20px",background:disabled?C.border:bg,color:outline?(color||C.accent):"#fff",border:outline?`1.5px solid ${color||C.accent}`:"none",borderRadius:10,fontSize:small?12:13,fontWeight:700,fontFamily:FF.body,cursor:disabled?"not-allowed":"pointer",display:"inline-flex",alignItems:"center",gap:6,opacity:disabled?.5:1,transition:"opacity .15s"}}>
-    {Icon&&<Icon size={small?12:15}/>}{children}
-  </button>;
-}
-function Input({label,value,onChange,type="text",placeholder}){
-  return <div>
-    {label&&<label style={{display:"block",fontSize:12,fontWeight:700,color:C.textDim,marginBottom:6,letterSpacing:.3}}>{label}</label>}
-    <input value={value} onChange={e=>onChange(e.target.value)} type={type} placeholder={placeholder} style={{width:"100%",padding:"12px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body,outline:"none",boxSizing:"border-box"}}/>
-  </div>;
+function makeStore(teachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots) {
+  const studentById = (id) => students.find(s => s.id === id);
+  const teacherById = (id) => teachers.find(t => t.id === id);
+
+  const subjectForSlot = (slot) => {
+    const t = teachers.find(x => x.id === slot.teacherId);
+    return t?.subjects?.[0] || "Nachhilfe";
+  };
+  const roomNameForSlot = (slot) =>
+    ROOMS_BY_LOCATION[slot.locationId]?.find(r => r.id === slot.roomId)?.name || "Raum";
+
+  const buildSlotLesson = (slot, dk) => {
+    const [y, m, d] = dk.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const studentObjs = slot.studentIds.map(id => students.find(x => x.id === id)).filter(Boolean);
+    const single = studentObjs.length === 1 ? studentObjs[0] : null;
+    const subject = single ? (single.subjects?.length ? single.subjects.join(" · ") : subjectForSlot(slot)) : null;
+    const base = {
+      id: `${slot.id}|${dk}`,
+      slotId: slot.id, dateKey: dk, teacherId: slot.teacherId,
+      day: slot.day,
+      date: dateObj.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" }),
+      time: slot.time, plannedDur: COURSE_DURATION,
+      room: roomNameForSlot(slot), type: slot.type,
+      studentIds: slot.studentIds, students: studentObjs, subject,
+      status: "scheduled", notes: slot.notes || "",
+    };
+    const existing = appointments.find(a => a.slotId === slot.id && a.dateKey === dk);
+    return existing ? { ...base, ...existing, studentIds: slot.studentIds, students: studentObjs, subject } : base;
+  };
+
+  const lessonsForDate = (tid, dateObj) => {
+    const wd = appDayFromJS(dateObj);
+    const dk = isoDateKey(dateObj);
+    return scheduleSlots
+      .filter(s => s.teacherId === tid && ((!s.onDate && s.day === wd) || s.onDate === dk))
+      .map(slot => buildSlotLesson(slot, dk))
+      .sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  const aptsForToday = (tid) => lessonsForDate(tid, new Date());
+  const aptsForWeek = (tid) => {
+    const mon = mondayOf(new Date());
+    const out = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(mon); d.setDate(mon.getDate() + i);
+      out.push(...lessonsForDate(tid, d));
+    }
+    return out;
+  };
+  const aptsAllToday = () => {
+    const dt = new Date();
+    const wd = appDayFromJS(dt);
+    const dk = isoDateKey(dt);
+    return scheduleSlots
+      .filter(s => (!s.onDate && s.day === wd) || s.onDate === dk)
+      .map(slot => buildSlotLesson(slot, dk))
+      .sort((a, b) => a.time.localeCompare(b.time));
+  };
+  const lessonsForDateAll = (dateObj) => {
+    const wd = appDayFromJS(dateObj);
+    const dk = isoDateKey(dateObj);
+    return scheduleSlots
+      .filter(s => (!s.onDate && s.day === wd) || s.onDate === dk)
+      .map(slot => buildSlotLesson(slot, dk))
+      .sort((a, b) => a.time.localeCompare(b.time));
+  };
+  const lessonById = (id) => {
+    const mat = appointments.find(a => a.id === id);
+    if (mat) {
+      const slot = scheduleSlots.find(s => s.id === mat.slotId);
+      if (slot) return buildSlotLesson(slot, mat.dateKey);
+      return mat;
+    }
+    const [slotId, dk] = id.split("|");
+    const slot = scheduleSlots.find(s => s.id === slotId);
+    if (!slot) return null;
+    return buildSlotLesson(slot, dk);
+  };
+
+  const openHoursForTeacher = (tid) =>
+    appointments.filter(a => a.teacherId === tid && a.status === "completed" && !a.billed);
+  const billedHoursForTeacher = (tid, month) =>
+    appointments.filter(a => a.teacherId === tid && a.status === "completed" && a.billed && (!month || a.billedMonth === month));
+  const auditForTeacher = (tid) => billingLog.filter(e => e.teacherId === tid).sort((a,b) => b.timestamp - a.timestamp);
+  const slotsForDayLoc = (day, locationId) =>
+    scheduleSlots.filter(s => s.day === day && s.locationId === locationId && !s.onDate);
+  const slotsForDateLoc = (dateObj, locationId) => {
+    const wd = appDayFromJS(dateObj);
+    const dk = isoDateKey(dateObj);
+    return scheduleSlots.filter(s => s.locationId === locationId && ((!s.onDate && s.day === wd) || s.onDate === dk));
+  };
+
+  return {
+    teachers, students, appointments, billingLog, scheduleSlots,
+    studentById, teacherById,
+    aptsForToday, aptsForWeek, aptsAllToday, lessonsForDateAll, lessonById,
+    openHoursForTeacher, billedHoursForTeacher, auditForTeacher,
+    slotsForDayLoc, slotsForDateLoc,
+
+    // DEMO: pure state mutations (no Supabase)
+    addStudent: (data) => {
+      const id = Date.now();
+      const short = (data.name || "?").split(" ").filter(Boolean).map(p => p[0]).join("").slice(0, 2).toUpperCase() || "??";
+      const student = { id, name: data.name || "Neuer Schueler", short, grade: data.grade || 1, subjects: data.subjects || [], teacherId: data.teacherId ?? null, focus: data.focus || "Neu", notes: data.notes || "", since: new Date().toLocaleDateString("de-DE", { month: "short", year: "numeric" }), locationId: data.locationId || LOCATIONS[0].id };
+      setStudents(prev => [...prev, student]);
+      return id;
+    },
+    updateStudent: (sid, patch) => {
+      setStudents(prev => prev.map(s => {
+        if (s.id !== sid) return s;
+        const updated = { ...s, ...patch };
+        if (patch.name) updated.short = patch.name.split(" ").filter(Boolean).map(p => p[0]).join("").slice(0, 2).toUpperCase() || "??";
+        return updated;
+      }));
+    },
+    removeStudent: (sid) => { setStudents(prev => prev.filter(s => s.id !== sid)); },
+    assignStudent: (sid, tid) => { setStudents(prev => prev.map(s => s.id === sid ? { ...s, teacherId: tid } : s)); },
+
+    checkIn: (lesson) => {
+      const now = new Date();
+      const apt = { id: `apt_${Date.now()}`, slotId: lesson.slotId, dateKey: lesson.dateKey, day: lesson.day, date: lesson.date, time: lesson.time, teacherId: lesson.teacherId, roomId: scheduleSlots.find(s => s.id === lesson.slotId)?.roomId || null, studentIds: lesson.studentIds || [], plannedDur: lesson.plannedDur || 60, status: "checked-in", checkedInAt: hhmm(now), checkedOutAt: null, completedDur: null, _checkedInTs: now.getTime(), heldMethod: "live", notes: lesson.notes || "", billed: false, billedMonth: null };
+      setAppointments(prev => [...prev, apt]);
+    },
+    checkOut: (aptId, notes) => {
+      const now = new Date();
+      setAppointments(prev => prev.map(a => a.id === aptId ? { ...a, status: "completed", checkedOutAt: hhmm(now), completedDur: a.plannedDur || 60, notes: notes || a.notes } : a));
+    },
+    revertLesson: (aptId) => { setAppointments(prev => prev.filter(a => a.id !== aptId)); },
+    confirmHeld: (lesson, notes) => {
+      const start = new Date(`${lesson.dateKey}T${lesson.time}:00`);
+      const dur = lesson.plannedDur || 60;
+      const end = new Date(start.getTime() + dur * 60000);
+      const existing = appointments.find(a => a.slotId === lesson.slotId && a.dateKey === lesson.dateKey);
+      if (existing) {
+        setAppointments(prev => prev.map(a => a.id === existing.id ? { ...a, status: "completed", checkedOutAt: hhmm(end), completedDur: dur, heldMethod: a.heldMethod || "confirmed", notes: notes || a.notes } : a));
+        return;
+      }
+      const apt = { id: `apt_${Date.now()}`, slotId: lesson.slotId, dateKey: lesson.dateKey, day: lesson.day, date: lesson.date, time: lesson.time, teacherId: lesson.teacherId, studentIds: lesson.studentIds || [], plannedDur: dur, status: "completed", checkedInAt: hhmm(start), checkedOutAt: hhmm(end), completedDur: dur, _checkedInTs: start.getTime(), heldMethod: "confirmed", notes: notes || "", billed: false, billedMonth: null };
+      setAppointments(prev => [...prev, apt]);
+    },
+    confirmManyHeld: (lessons) => {
+      const toInsert = lessons.filter(l => !appointments.find(a => a.slotId === l.slotId && a.dateKey === l.dateKey));
+      if (!toInsert.length) return;
+      const newApts = toInsert.map(l => {
+        const start = new Date(`${l.dateKey}T${l.time}:00`);
+        const dur = l.plannedDur || 60;
+        const end = new Date(start.getTime() + dur * 60000);
+        return { id: `apt_${Date.now()}_${l.slotId}`, slotId: l.slotId, dateKey: l.dateKey, day: l.day, date: l.date, time: l.time, teacherId: l.teacherId, studentIds: l.studentIds || [], plannedDur: dur, status: "completed", checkedInAt: hhmm(start), checkedOutAt: hhmm(end), completedDur: dur, _checkedInTs: start.getTime(), heldMethod: "confirmed", notes: "", billed: false };
+      });
+      setAppointments(prev => [...prev, ...newApts]);
+    },
+    markAsBilled: (teacherId, month, billedBy) => {
+      const now = new Date();
+      const teacher = teachers.find(t => t.id === teacherId);
+      const open = appointments.filter(a => a.teacherId === teacherId && a.status === "completed" && !a.billed);
+      if (!open.length) return;
+      const hours = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+      const cost = hours * (teacher?.rate || 0);
+      const ids = open.map(a => a.id);
+      setAppointments(prev => prev.map(a => ids.includes(a.id) ? { ...a, billed: true, billedMonth: month, billedBy } : a));
+      setBillingLog(prev => [...prev, { id: Date.now(), teacherId, teacherName: teacher?.name, month, hours, cost, billedBy, timestamp: now.getTime(), formatted: now.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) }]);
+    },
+    exportCSV: (teacherId) => {
+      const t = teachers.find(x => x.id === teacherId);
+      if (!t) return;
+      const open = appointments.filter(a => a.teacherId === teacherId && a.status === "completed" && !a.billed);
+      if (!open.length) return;
+      const byDay = {};
+      open.forEach(a => { const dk = a.dateKey || ""; byDay[dk] = (byDay[dk] || 0) + (a.completedDur || 0); });
+      const days = Object.keys(byDay).filter(Boolean).sort();
+      const wdShort = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+      const totalMin = days.reduce((s, dk) => s + byDay[dk], 0);
+      const totalHrs = totalMin / 60;
+      const rateStr = t.rate.toFixed(2).replace(".", ",");
+      const monthRef = days.length ? new Date(days[0] + "T00:00:00").toLocaleDateString("de-DE", { month: "long", year: "numeric" }) : "";
+      const rows = [
+        ["Leistungsnachweis", t.name], ["Zeitraum", monthRef], ["Stundensatz", rateStr], [],
+        ["Datum","Wochentag","Stunden","Stundensatz","Betrag"],
+        ...days.map(dk => { const hrs = byDay[dk]/60; const wd = wdShort[new Date(dk+"T00:00:00").getDay()]; return [dk, wd, hrs.toFixed(2).replace(".",","), rateStr, (hrs*t.rate).toFixed(2).replace(".",",")]; }),
+        [], ["Summe","",totalHrs.toFixed(2).replace(".",","),"",(totalHrs*t.rate).toFixed(2).replace(".",",")],
+      ];
+      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+      const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = `leistungsnachweis_${t.name.replace(/\s+/g,"_")}.csv`;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    saveSlot: (slotData) => {
+      if (slotData.id && scheduleSlots.find(s => s.id === slotData.id)) {
+        setScheduleSlots(prev => prev.map(s => s.id === slotData.id ? { ...s, ...slotData } : s));
+      } else {
+        const id = slotData.id || `slot_${Date.now()}`;
+        setScheduleSlots(prev => [...prev, { ...slotData, id }]);
+      }
+    },
+    removeSlot: (slotId) => { setScheduleSlots(prev => prev.filter(s => s.id !== slotId)); },
+    copyDayToDay: (fromDay, toDay, locationId) => {
+      const source = scheduleSlots.filter(s => s.day === fromDay && s.locationId === locationId && !s.onDate);
+      const newSlots = source.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}`, day: toDay }));
+      setScheduleSlots(prev => [...prev.filter(s => !(s.day === toDay && s.locationId === locationId && !s.onDate)), ...newSlots]);
+    },
+    clearDay: (day, locationId) => {
+      setScheduleSlots(prev => prev.filter(s => !(s.day === day && s.locationId === locationId && !s.onDate)));
+    },
+  };
 }
 
-/* =========================================================
-   SVG LOGO
-   ========================================================= */
-function Logo({size=36}){
-  return <svg width={size*2.5} height={size*.75} viewBox="0 0 220 60">
-    <circle cx="28" cy="30" r="22" fill="none" stroke={C.primary} strokeWidth="2.5"/>
-    <ellipse cx="28" cy="30" rx="11" ry="22" fill="none" stroke={C.primary} strokeWidth="1.5"/>
-    <line x1="6" y1="20" x2="50" y2="20" stroke={C.primary} strokeWidth="1.5"/>
-    <line x1="6" y1="30" x2="50" y2="30" stroke={C.primary} strokeWidth="1.5"/>
-    <line x1="6" y1="40" x2="50" y2="40" stroke={C.primary} strokeWidth="1.5"/>
-    <path d="M14 10 Q28 2 42 10" fill="none" stroke={C.accent} strokeWidth="3" strokeLinecap="round"/>
-    <text x="62" y="26" fontFamily={FF.display} fontSize="18" fontWeight="800" fill={C.primary} letterSpacing="-0.5">Lernwelt</text>
-    <text x="62" y="44" fontFamily={FF.display} fontSize="10" fontWeight="700" fill={C.accent} letterSpacing="1.5">NACHHILFESCHULE</text>
-  </svg>;
+const statusColor = (s) => s === "completed" ? C.success : s === "checked-in" ? C.primary : C.info;
+const statusLabel = (s) => s === "completed" ? "Erledigt" : s === "checked-in" ? "Läuft jetzt" : "Geplant";
+const subjectsMatch = (ts, ss) => ts.some(sub => ss.some(x => sub.toLowerCase().includes(x.toLowerCase()) || x.toLowerCase().includes(sub.toLowerCase())));
+const fmtEur = (n) => `${n.toFixed(2).replace(".", ",")} €`;
+
+function FontInjector() {
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap";
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, []);
+  return null;
 }
 
-/* =========================================================
-   SIDEBAR
-   ========================================================= */
-function Sidebar({tab,setTab,onLogout,view,user,slots}){
-  const isSuperAdmin=user?.role==="superadmin";
-  const tabs=isSuperAdmin?[
-    {key:"dashboard",label:"Dashboard",  icon:HomeIcon},
-    {key:"plan",     label:"Wochenplan", icon:Calendar},
-    {key:"students", label:"Schüler",    icon:Users},
-    {key:"teachers", label:"Lehrkräfte", icon:GraduationCap},
-    {key:"billing",  label:"Abrechnung", icon:DollarSign},
-    {key:"stunden",  label:"Stunden",    icon:Clock},
-  ]:[
-    {key:"dashboard",label:"Dashboard",  icon:HomeIcon},
-    {key:"plan",     label:"Wochenplan", icon:Calendar},
-    {key:"students", label:"Schüler",    icon:Users},
-    {key:"teachers", label:"Lehrkräfte", icon:GraduationCap},
-    {key:"billing",  label:"Abrechnung", icon:DollarSign},
-    {key:"stunden",  label:"Stunden",    icon:Clock},
-  ];
+/* PRIMITIVES */
+function Avatar({ short, color, size = 32 }) {
+  return <div style={{ width: size, height: size, borderRadius: size/2, background: color || C.surfaceHi, border: `1.5px solid ${color || C.borderHi}`, display: "grid", placeItems: "center", color: color ? "#fff" : C.textHi, fontWeight: 700, fontSize: size * 0.36, fontFamily: FF.display, letterSpacing: -0.5, flexShrink: 0 }}>{short}</div>;
+}
 
-  // Count slots per location
-  const slotsByLoc=loc=>slots.filter(s=>s.locationId===loc).length;
+function SectionHeader({ children, action }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+      <h2 style={{ fontSize: 13, fontWeight: 700, color: C.textDim, letterSpacing: 1, margin: 0, textTransform: "uppercase" }}>{children}</h2>
+      {action}
+    </div>
+  );
+}
 
-  return <div style={{width:240,flexShrink:0,background:C.primary,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0}}>
-    <div style={{padding:"24px 20px 18px",borderBottom:"1px solid rgba(255,255,255,.1)"}}>
-      <Logo size={26}/>
-      <div style={{marginTop:10,fontSize:9,color:"rgba(255,255,255,.35)",fontWeight:800,letterSpacing:1.5,textTransform:"uppercase"}}>
-        {user?.role==="superadmin"?"Ober-Admin · Alle Standorte":"Standort-Admin · "+LOCATIONS.find(l=>l.id===user?.locationId)?.name}
+function Tag({ children, color = C.text }) {
+  return <div style={{ padding: "5px 10px", borderRadius: 6, background: color + "18", color, fontSize: 11, fontWeight: 700, letterSpacing: .3 }}>{children}</div>;
+}
+
+function Field({ label, value, onChange, type = "text", placeholder, hint }) {
+  return (
+    <div>
+      <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>{label}</label>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", padding: "14px 16px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 15, fontFamily: FF.body, outline: "none", boxSizing: "border-box" }}/>
+      {hint && <div style={{ fontSize: 11, color: C.textVeryDim, marginTop: 6 }}>{hint}</div>}
+    </div>
+  );
+}
+
+function PrimaryButton({ children, onClick, disabled, icon: Icon, color }) {
+  const bg = color || C.primaryGrad;
+  return (
+    <button onClick={onClick} disabled={disabled} style={{ width: "100%", padding: 16, background: disabled ? C.borderHi : bg, color: "#fff", border: "none", borderRadius: 14, fontSize: 15, fontWeight: 700, fontFamily: FF.body, cursor: disabled ? "not-allowed" : "pointer", boxShadow: disabled ? "none" : "0 12px 24px -8px rgba(244,145,86,.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: disabled ? .5 : 1 }}>
+      {Icon && <Icon size={18}/>} {children}
+    </button>
+  );
+}
+
+function SubjectsPicker({ selected, onChange }) {
+  const toggle = (s) => selected.includes(s) ? onChange(selected.filter(x => x !== s)) : onChange([...selected, s]);
+  return (
+    <div>
+      <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Fächer · mehrere möglich</label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {ALL_SUBJECTS.map(s => {
+          const isOn = selected.includes(s);
+          return (
+            <button key={s} onClick={() => toggle(s)} style={{ padding: "8px 12px", borderRadius: 8, cursor: "pointer", background: isOn ? "rgba(244,145,86,.18)" : C.surface, border: `1.5px solid ${isOn ? C.primary : C.border}`, color: isOn ? C.primary : C.text, fontSize: 13, fontWeight: 600, fontFamily: FF.body, display: "flex", alignItems: "center", gap: 6 }}>
+              {isOn && <Check size={12} strokeWidth={3}/>} {s}
+            </button>
+          );
+        })}
+      </div>
+      {selected.length === 0 && <div style={{ fontSize: 11, color: C.textVeryDim, marginTop: 8 }}>Mindestens ein Fach auswählen.</div>}
+    </div>
+  );
+}
+
+/* CHROME */
+function StatusBar() {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 28px 8px", fontFamily: FF.body, fontSize: 14, fontWeight: 600, flexShrink: 0 }}>
+      <span style={{ color: C.textHi }}>9:41</span>
+      <div style={{ width: 130 }}/>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", color: C.textHi }}>
+        <Signal size={14}/><Wifi size={14}/><BatteryFull size={18}/>
       </div>
     </div>
+  );
+}
 
-    {/* Standorte — immer mit Zahl, klickbar */}
-    <div style={{padding:"12px 12px 10px",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
-      <div style={{fontSize:9,color:"rgba(255,255,255,.3)",fontWeight:800,letterSpacing:2,marginBottom:8,paddingLeft:6,textTransform:"uppercase"}}>Standorte</div>
-      {LOCATIONS.map(loc=>{
-        const cnt=slotsByLoc(loc.id);
-        const isMyLoc=!isSuperAdmin&&user?.locationId===loc.id;
-        const disabled=!isSuperAdmin&&user?.locationId!==loc.id;
-        return <button key={loc.id} onClick={()=>{if(!disabled){setTab("plan_"+loc.id);}}} disabled={disabled} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:8,background:tab===`plan_${loc.id}`?"rgba(255,255,255,.15)":"transparent",border:"none",cursor:disabled?"default":"pointer",marginBottom:2,opacity:disabled?.4:1,transition:"all .15s"}}>
-          <div style={{width:8,height:8,borderRadius:4,background:loc.color,flexShrink:0}}/>
-          <span style={{fontSize:11,color:"rgba(255,255,255,.75)",fontWeight:600,flex:1,textAlign:"left"}}>{loc.name}</span>
-          <span style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",background:"rgba(255,255,255,.1)",padding:"1px 6px",borderRadius:10}}>{cnt}</span>
-          {isMyLoc&&<div style={{width:5,height:5,borderRadius:"50%",background:C.accent,flexShrink:0}}/>}
-        </button>;
-      })}
-    </div>
-
-    <nav style={{flex:1,padding:"10px 10px",display:"flex",flexDirection:"column",gap:2}}>
-      {tabs.map(t=>{
-        const active=(tab===t.key||tab.startsWith("plan_")&&t.key==="plan")&&!view;
-        const Icon=t.icon;
-        return <button key={t.key} onClick={()=>setTab(t.key)} style={{width:"100%",padding:"10px 14px",borderRadius:10,background:active?"rgba(255,255,255,.15)":"transparent",border:active?"1px solid rgba(255,255,255,.2)":"1px solid transparent",color:active?"#fff":"rgba(255,255,255,.55)",fontSize:13,fontWeight:active?700:500,cursor:"pointer",fontFamily:FF.body,textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all .15s"}}>
-          <Icon size={15} strokeWidth={active?2.5:2}/>{t.label}
-        </button>;
-      })}
-    </nav>
-
-    <div style={{padding:"12px 14px",borderTop:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:10}}>
-      <Avatar short={user?.short||"AD"} color={user?.color||C.accent} size={34}/>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:12,fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||"Admin"}</div>
-        <div style={{fontSize:9,color:"rgba(255,255,255,.4)",marginTop:1,fontWeight:700,letterSpacing:.5}}>{user?.role==="superadmin"?"OBER-ADMIN":"STANDORT-ADMIN"}</div>
+function AppHeader({ user, onLogout }) {
+  const isAdmin = user.role === "admin";
+  return (
+    <div style={{ padding: "8px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}`, background: C.bgGrad, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 14, fontFamily: FF.display }}>B</div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi, lineHeight: 1.1 }}>{user.name}</div>
+          <div style={{ fontSize: 10, color: isAdmin ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, display: "flex", alignItems: "center", gap: 4 }}>
+            {isAdmin ? "ADMINISTRATION" : "LEHRKRAFT"}
+          </div>
+        </div>
       </div>
-      <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,.2)",color:"rgba(255,255,255,.5)",width:28,height:28,borderRadius:7,display:"grid",placeItems:"center",cursor:"pointer"}}>
-        <LogOut size={12}/>
+      <button onClick={onLogout} title="Abmelden" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, width: 36, height: 36, borderRadius: 10, display: "grid", placeItems: "center", cursor: "pointer" }}>
+        <LogOut size={14}/>
       </button>
     </div>
-  </div>;
+  );
 }
 
-/* =========================================================
-   LOGIN
-   ========================================================= */
-function Login({onLogin}){
-  const [selected,setSelected]=useState("admin_all");
-  const [pw,setPw]=useState("demo1234");
-  const [showPw,setShowPw]=useState(false);
-  const [loading,setLoading]=useState(false);
-  const submit=e=>{e.preventDefault();setLoading(true);setTimeout(()=>onLogin(DEMO_USERS.find(u=>u.id===selected)),700);};
-  const u=DEMO_USERS.find(x=>x.id===selected);
-  return <div style={{minHeight:"100vh",display:"flex",background:C.bg}}>
-    <div style={{flex:1,background:C.primary,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 80px",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",top:-100,right:-100,width:350,height:350,background:"rgba(232,101,10,.12)",borderRadius:"50%"}}/>
-      <div style={{position:"absolute",bottom:-80,left:-80,width:280,height:280,background:"rgba(255,255,255,.04)",borderRadius:"50%"}}/>
-      <div style={{position:"relative"}}>
-        <Logo size={32}/>
-        <div style={{marginTop:48}}>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.45)",fontWeight:800,letterSpacing:2,marginBottom:14,textTransform:"uppercase"}}>Verwaltungsportal</div>
-          <h1 style={{fontFamily:FF.display,fontSize:42,fontWeight:800,color:"#fff",lineHeight:1.1,margin:"0 0 18px",letterSpacing:-1.5}}>Alle 4 Standorte.<br/><span style={{color:C.accentLi}}>Ein System.</span></h1>
-          <p style={{fontSize:15,color:"rgba(255,255,255,.6)",lineHeight:1.7,maxWidth:380}}>Standortübergreifend verwalten — oder pro Standort gezielt.</p>
-        </div>
-        <div style={{marginTop:44,display:"flex",flexDirection:"column",gap:10}}>
-          {["Ober-Admin: alle 4 Standorte in einer Ansicht","Standort-Admin: fokussiert auf einen Ort","Lehrkräfte-Einladung per E-Mail","Lohnabrechnung mit PIN-Schutz"].map(f=><div key={f} style={{display:"flex",alignItems:"center",gap:10,color:"rgba(255,255,255,.8)",fontSize:13}}>
-            <div style={{width:20,height:20,borderRadius:6,background:C.accent,display:"grid",placeItems:"center",flexShrink:0}}><Check size={11} color="#fff" strokeWidth={3}/></div>{f}
-          </div>)}
-        </div>
-      </div>
-    </div>
-    <div style={{width:500,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 50px",background:C.surface,overflowY:"auto"}}>
-      <div style={{width:"100%"}}>
-        <h2 style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:C.textHi,margin:"0 0 6px",letterSpacing:-1}}>Demo-Zugang wählen</h2>
-        <p style={{fontSize:13,color:C.textDim,margin:"0 0 22px"}}>Wähle eine Rolle um den Funktionsumfang zu erleben.</p>
-
-        {/* Rolle wählen */}
-        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-          {DEMO_USERS.map(u2=>{
-            const loc=LOCATIONS.find(l=>l.id===u2.locationId);
-            const active=selected===u2.id;
-            return <button key={u2.id} onClick={()=>setSelected(u2.id)} style={{padding:"12px 16px",background:active?u2.color+"12":C.surfaceAlt,border:`1.5px solid ${active?u2.color:C.border}`,borderRadius:12,cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",alignItems:"center",gap:12,transition:"all .15s"}}>
-              <Avatar short={u2.short} color={u2.color} size={38}/>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{u2.name}</div>
-                <div style={{fontSize:11,color:C.textDim,marginTop:2}}>{u2.title}</div>
-              </div>
-              <div style={{padding:"3px 10px",borderRadius:6,background:u2.role==="superadmin"?C.primary+"18":u2.color+"18",color:u2.role==="superadmin"?C.primary:u2.color,fontSize:10,fontWeight:800,letterSpacing:.5}}>
-                {u2.role==="superadmin"?"OBER-ADMIN":"STANDORT-ADMIN"}
-              </div>
-              {active&&<Check size={16} color={u2.color}/>}
-            </button>;
-          })}
-        </div>
-
-        <form onSubmit={submit} style={{display:"flex",flexDirection:"column",gap:12}}>
-          <div>
-            <label style={{display:"block",fontSize:12,fontWeight:700,color:C.textDim,marginBottom:6}}>Passwort</label>
-            <div style={{position:"relative"}}>
-              <input value={pw} onChange={e=>setPw(e.target.value)} type={showPw?"text":"password"} style={{width:"100%",padding:"12px 44px 12px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body,outline:"none",boxSizing:"border-box"}}/>
-              <button type="button" onClick={()=>setShowPw(!showPw)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}>
-                {showPw?<EyeOff size={18}/>:<Eye size={18}/>}
-              </button>
-            </div>
-          </div>
-          <button type="submit" disabled={loading} style={{padding:"14px 20px",background:`linear-gradient(135deg,${u?.color||C.accent} 0%,${C.accentDk} 100%)`,color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:800,fontFamily:FF.body,cursor:"pointer",boxShadow:`0 8px 20px -6px ${u?.color||C.accent}60`,marginTop:4}}>
-            {loading?"Anmelden…":`Als ${u?.name} einloggen →`}
+function BottomTabs({ tab, setTab, isAdmin }) {
+  const tabs = isAdmin
+    ? [
+        { key: "admin-billing", label: "Lohn", icon: DollarSign },
+        { key: "admin-schedule", label: "Plan", icon: Calendar },
+        { key: "admin-students", label: "Schüler", icon: Users },
+        { key: "admin-staff", label: "Lehrer", icon: GraduationCap },
+        { key: "admin-today", label: "Stunden", icon: Clock },
+      ]
+    : [
+        { key: "today", label: "Heute", icon: HomeIcon },
+        { key: "week", label: "Woche", icon: Calendar },
+        { key: "students", label: "Schüler", icon: Users },
+        { key: "profile", label: "Profil", icon: User },
+      ];
+  return (
+    <div style={{ flexShrink: 0, background: "rgba(15,27,45,.92)", backdropFilter: "blur(20px)", borderTop: `1px solid ${C.border}`, padding: "10px 4px max(28px, env(safe-area-inset-bottom))", display: "flex", justifyContent: "space-around" }}>
+      {tabs.map(t => {
+        const active = tab === t.key;
+        const Icon = t.icon;
+        return (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ background: "transparent", border: "none", padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: active ? C.primary : C.textVeryDim, cursor: "pointer", flex: 1, minWidth: 0 }}>
+            <Icon size={isAdmin ? 18 : 20} strokeWidth={active ? 2.5 : 2}/>
+            <span style={{ fontSize: isAdmin ? 9 : 10, fontWeight: 700, fontFamily: FF.body }}>{t.label}</span>
           </button>
-        </form>
-        <div style={{marginTop:14,padding:"10px 14px",background:C.accentTint,border:`1px solid ${C.accent}30`,borderRadius:10,fontSize:12,color:C.accentDk,fontWeight:600}}>
-          Demo-Passwort: demo1234
-        </div>
-      </div>
-    </div>
-  </div>;
-}
-
-/* =========================================================
-   DASHBOARD
-   ========================================================= */
-function Dashboard({apts,teachers,students,slots,setTab,setView}){
-  const todayApts=apts.filter(a=>a.dateKey===todayKey);
-  const done=todayApts.filter(a=>a.status==="completed").length;
-  const running=todayApts.filter(a=>a.status==="checked-in").length;
-  const openBilling=apts.filter(a=>a.status==="completed"&&!a.billed);
-  const totalOpen=openBilling.reduce((s,a)=>{const t=teachers.find(x=>x.id===a.teacherId);return s+(a.completedDur||60)/60*(t?.rate||22);},0);
-
-  const byLoc=LOCATIONS.map(loc=>{
-    const la=todayApts.filter(a=>a.locationId===loc.id);
-    return {...loc,count:la.length,done:la.filter(a=>a.status==="completed").length};
-  });
-
-  return <div style={{padding:"32px 40px 60px",maxWidth:1200}}>
-    <div style={{marginBottom:28}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>
-        {today.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}
-      </div>
-      <h1 style={{fontFamily:FF.display,fontSize:36,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1.2}}>Guten Tag, Admin.</h1>
-      <p style={{fontSize:15,color:C.textDim,margin:"6px 0 0"}}>Heute laufen <strong style={{color:C.primary}}>{todayApts.length} Stunden</strong> an 4 Standorten.</p>
-    </div>
-
-    {/* Stats */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:28}}>
-      {[
-        {label:"Heute gesamt",value:todayApts.length,icon:Calendar,color:C.primary,action:()=>setTab("stunden")},
-        {label:"Aktive Stunden",value:running,icon:Play,color:C.accent,sub:running?"läuft jetzt":"",action:()=>setTab("stunden")},
-        {label:"Abgeschlossen",value:done,icon:CheckCircle2,color:C.success,action:()=>setTab("stunden")},
-        {label:"Offene Abrechnung",value:fmtEur(totalOpen),icon:DollarSign,color:C.warn,sub:`${openBilling.length} Termine`,action:()=>setTab("billing")},
-      ].map(s=>{
-        const Icon=s.icon;
-        return <div key={s.label} onClick={s.action} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",cursor:"pointer",transition:"all .2s",boxShadow:"0 1px 4px rgba(26,58,107,.05)"}}
-          onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 24px rgba(26,58,107,.12)";e.currentTarget.style.borderColor=C.primary;}}
-          onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(26,58,107,.05)";e.currentTarget.style.borderColor=C.border;}}>
-          <div style={{width:38,height:38,borderRadius:10,background:s.color+"15",display:"grid",placeItems:"center",marginBottom:12}}>
-            <Icon size={18} color={s.color}/>
-          </div>
-          <div style={{fontFamily:FF.display,fontSize:typeof s.value==="string"?18:28,fontWeight:800,color:C.textHi,lineHeight:1,letterSpacing:-0.5}}>{s.value}</div>
-          <div style={{fontSize:12,color:C.textDim,marginTop:6,fontWeight:600}}>{s.label}</div>
-          {s.sub&&<div style={{fontSize:11,color:s.color,marginTop:3,fontWeight:700}}>{s.sub}</div>}
-        </div>;
+        );
       })}
     </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:20,marginBottom:20}}>
-      {/* Standorte */}
-      <Card accent={C.primary}>
-        <SecTitle>Standorte heute <span style={{color:C.textVeryDim,fontWeight:400}}>– klicken für Details</span></SecTitle>
-        {byLoc.map(loc=><div key={loc.id} onClick={()=>{setTab("plan");}} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:C.surfaceAlt,borderRadius:10,marginBottom:8,cursor:"pointer",transition:"all .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.background=loc.color+"15"}
-          onMouseLeave={e=>e.currentTarget.style.background=C.surfaceAlt}>
-          <div style={{width:10,height:10,borderRadius:5,background:loc.color,flexShrink:0}}/>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.textHi}}>{loc.name}</div>
-            <div style={{fontSize:11,color:C.textDim,marginTop:1}}>{loc.count} Stunden · {loc.done} fertig</div>
-          </div>
-          <div style={{width:80,height:6,background:C.border,borderRadius:3,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${loc.count?(loc.done/loc.count)*100:0}%`,background:loc.color,borderRadius:3,transition:"width .5s"}}/>
-          </div>
-          <span style={{fontSize:11,fontWeight:800,color:loc.color,minWidth:30,textAlign:"right"}}>{loc.count?Math.round((loc.done/loc.count)*100):0}%</span>
-          <ChevronRight size={14} color={C.textVeryDim}/>
-        </div>)}
-      </Card>
-
-      {/* Lehrkräfte */}
-      <Card>
-        <SecTitle>Lehrkräfte heute</SecTitle>
-        {teachers.map(t=>{
-          const ta=todayApts.filter(a=>a.teacherId===t.id);
-          if(!ta.length) return null;
-          const active=ta.find(a=>a.status==="checked-in");
-          return <div key={t.id} onClick={()=>setView({type:"teacher",id:t.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.surfaceAlt,borderRadius:10,marginBottom:6,cursor:"pointer",transition:"all .15s"}}
-            onMouseEnter={e=>e.currentTarget.style.background=C.primaryTint||"#EBF0FA"}
-            onMouseLeave={e=>e.currentTarget.style.background=C.surfaceAlt}>
-            <Avatar short={t.short} color={t.color} size={32}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:700,color:C.textHi}}>{t.name}</div>
-              <div style={{fontSize:10,color:C.textDim}}>{ta.length} Stunden heute</div>
-            </div>
-            {active&&<span style={{fontSize:10,fontWeight:800,color:C.accent,background:C.accentTint,padding:"2px 8px",borderRadius:6}}>AKTIV</span>}
-            <ChevronRight size={14} color={C.textVeryDim}/>
-          </div>;
-        }).filter(Boolean)}
-      </Card>
-    </div>
-
-    {/* Heutige Stunden */}
-    <Card>
-      <SecTitle>Alle Stunden heute <span style={{color:C.textVeryDim,fontWeight:400,fontSize:10}}>– anklicken für Details</span>
-        <button onClick={()=>setTab("stunden")} style={{fontSize:12,fontWeight:700,color:C.accent,background:"transparent",border:"none",cursor:"pointer",fontFamily:FF.body}}>Alle →</button>
-      </SecTitle>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
-        {todayApts.map(a=>{
-          const t=teachers.find(x=>x.id===a.teacherId);
-          const loc=LOCATIONS.find(l=>l.id===a.locationId);
-          const names=a.studentIds.map(id=>students.find(s=>s.id===id)?.name).filter(Boolean);
-          const sc={completed:C.success,"checked-in":C.accent,scheduled:C.textVeryDim};
-          return <div key={a.id} onClick={()=>setView({type:"apt",id:a.id})} style={{display:"flex",gap:10,padding:"10px 12px",background:a.status==="checked-in"?C.accentTint:C.surfaceAlt,borderRadius:10,border:a.status==="checked-in"?`1.5px solid ${C.accent}60`:"1px solid transparent",cursor:"pointer",transition:"all .15s"}}
-            onMouseEnter={e=>e.currentTarget.style.borderColor=C.primary}
-            onMouseLeave={e=>e.currentTarget.style.borderColor=a.status==="checked-in"?`${C.accent}60`:"transparent"}>
-            <div style={{fontFamily:FF.display,fontSize:13,fontWeight:800,color:C.textHi,minWidth:44}}>{a.time}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:12,fontWeight:700,color:C.textHi,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{names.join(", ")}</div>
-              <div style={{fontSize:10,color:C.textDim,marginTop:1}}>{t?.name} · {loc?.short} · {a.room}</div>
-            </div>
-            <div style={{width:8,height:8,borderRadius:4,background:sc[a.status]||C.textVeryDim,flexShrink:0,marginTop:3}}/>
-          </div>;
-        })}
-      </div>
-    </Card>
-  </div>;
+  );
 }
 
-/* =========================================================
-   STUNDEN DETAIL (Termin)
-   ========================================================= */
-function AptDetail({aptId,apts,teachers,students,setApts,onBack}){
-  const a=apts.find(x=>x.id===aptId); if(!a) return null;
-  const t=teachers.find(x=>x.id===a.teacherId);
-  const loc=LOCATIONS.find(l=>l.id===a.locationId);
-  const studs=a.studentIds.map(id=>students.find(s=>s.id===id)).filter(Boolean);
-  const [notes,setNotes]=useState(a.notes||"");
-
-  const checkIn=()=>setApts(prev=>prev.map(x=>x.id===aptId?{...x,status:"checked-in",checkedInAt:"jetzt",_checkedInTs:Date.now()}:x));
-  const checkOut=()=>setApts(prev=>prev.map(x=>x.id===aptId?{...x,status:"completed",checkedOutAt:"jetzt",completedDur:60,notes}:x));
-
-  const statusMap={completed:{color:C.success,label:"Abgeschlossen"},"checked-in":{color:C.accent,label:"Läuft jetzt"},scheduled:{color:C.textDim,label:"Geplant"}};
-  const s=statusMap[a.status];
-
-  return <div style={{padding:"28px 40px 60px",maxWidth:700}}>
-    <button onClick={onBack} style={{background:"transparent",border:"none",color:C.textDim,display:"flex",alignItems:"center",gap:6,padding:0,cursor:"pointer",marginBottom:20,fontFamily:FF.body,fontSize:13,fontWeight:600}}>
-      <ArrowLeft size={16}/> Zurück
-    </button>
-    <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24}}>
-      <div style={{width:52,height:52,borderRadius:14,background:loc?.color||C.primary,display:"grid",placeItems:"center",color:"#fff",fontWeight:800,fontSize:18}}>{loc?.short}</div>
-      <div>
-        <h1 style={{fontFamily:FF.display,fontSize:24,fontWeight:800,color:C.textHi,margin:"0 0 4px",letterSpacing:-0.5}}>{a.time} Uhr · {loc?.name}</h1>
-        <div style={{display:"flex",gap:6}}><Badge color={s.color}>{s.label}</Badge><Badge color={C.primary}>{a.room}</Badge></div>
+/* DESKTOP SIDEBAR — only visible on desktop (>= 768px). Replaces BottomTabs. */
+function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
+  const tabs = isAdmin
+    ? [
+        { key: "admin-billing", label: "Lohn", icon: DollarSign },
+        { key: "admin-schedule", label: "Plan", icon: Calendar },
+        { key: "admin-students", label: "Schüler", icon: Users },
+        { key: "admin-staff", label: "Lehrer", icon: GraduationCap },
+        { key: "admin-today", label: "Stunden", icon: Clock },
+      ]
+    : [
+        { key: "today", label: "Heute", icon: HomeIcon },
+        { key: "week", label: "Woche", icon: Calendar },
+        { key: "students", label: "Schüler", icon: Users },
+        { key: "profile", label: "Profil", icon: User },
+      ];
+  return (
+    <div style={{
+      width: 240, flexShrink: 0,
+      background: C.surfaceLo, borderRight: `1px solid ${C.border}`,
+      display: "flex", flexDirection: "column",
+      height: "100vh", position: "sticky", top: 0,
+      fontFamily: FF.body,
+    }}>
+      {/* Logo & brand */}
+      <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 11, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 16, fontFamily: FF.display }}>B</div>
+        <div>
+          <div style={{ fontFamily: FF.display, fontSize: 17, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Bendias</div>
+          <div style={{ fontSize: 10, color: C.textDim, letterSpacing: 1.4, fontWeight: 700, marginTop: 3 }}>MITARBEITER</div>
+        </div>
       </div>
-    </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-      <Card accent={t?.color}>
-        <div style={{paddingTop:4}}>
-          <div style={{fontSize:10,fontWeight:800,color:C.textDim,letterSpacing:1.5,marginBottom:10}}>LEHRKRAFT</div>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <Avatar short={t?.short} color={t?.color} size={38}/>
-            <div>
-              <div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{t?.name}</div>
-              <div style={{fontSize:11,color:C.textDim}}>{t?.subjects?.join(" · ")}</div>
-            </div>
+      {/* Tab list */}
+      <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4, overflow: "auto" }}>
+        {tabs.map(t => {
+          const active = tab === t.key;
+          const Icon = t.icon;
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              width: "100%", padding: "11px 14px", borderRadius: 10,
+              background: active ? "rgba(244,145,86,.12)" : "transparent",
+              border: active ? `1px solid ${C.primary}40` : "1px solid transparent",
+              color: active ? C.primary : C.text,
+              fontSize: 13, fontWeight: active ? 700 : 600, cursor: "pointer",
+              fontFamily: FF.body, textAlign: "left",
+              display: "flex", alignItems: "center", gap: 11,
+            }}>
+              <Icon size={17} strokeWidth={active ? 2.4 : 2}/>
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* User card at bottom */}
+      <div style={{ padding: "14px 16px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+        <Avatar user={user} size={36}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textHi, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</div>
+          <div style={{ fontSize: 10, color: user.role === "admin" ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>
+            {user.role === "admin" ? "ADMIN" : "LEHRKRAFT"}
           </div>
         </div>
-      </Card>
-      <Card>
-        <div style={{fontSize:10,fontWeight:800,color:C.textDim,letterSpacing:1.5,marginBottom:10}}>SCHÜLER ({studs.length})</div>
-        {studs.map(s=><div key={s.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-          <Avatar short={s.short} size={28}/>
-          <div>
-            <div style={{fontSize:13,fontWeight:700,color:C.textHi}}>{s.name}</div>
-            <div style={{fontSize:10,color:C.textDim}}>Kl. {s.grade} · {s.subjects?.join(", ")}</div>
-          </div>
-        </div>)}
-      </Card>
+        <button onClick={onLogout} title="Abmelden" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, width: 32, height: 32, borderRadius: 8, display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 }}>
+          <LogOut size={13}/>
+        </button>
+      </div>
     </div>
-
-    {a.status==="checked-in"&&<div style={{padding:20,background:`linear-gradient(135deg,${C.accent}18 0%,${C.accentDk}08 100%)`,border:`1.5px solid ${C.accent}60`,borderRadius:14,marginBottom:20,textAlign:"center"}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:1.5,marginBottom:8}}>STUNDE LÄUFT</div>
-      <div style={{fontFamily:FF.display,fontSize:40,fontWeight:800,color:C.textHi,letterSpacing:-2}}>00:12</div>
-      <div style={{fontSize:12,color:C.textDim,marginTop:6}}>seit Check-in um {a.checkedInAt}</div>
-    </div>}
-
-    <div style={{marginBottom:16}}>
-      <label style={{display:"block",fontSize:12,fontWeight:700,color:C.textDim,marginBottom:6}}>Notizen zur Stunde</label>
-      <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Was habt ihr gemacht?" style={{width:"100%",minHeight:80,padding:"12px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:13,fontFamily:FF.body,outline:"none",boxSizing:"border-box",resize:"vertical"}}/>
-    </div>
-
-    {a.status==="scheduled"&&<Btn onClick={checkIn} icon={Play} color={`linear-gradient(135deg,${C.primary} 0%,${C.primaryLi} 100%)`}>Stunde starten · Einchecken</Btn>}
-    {a.status==="checked-in"&&<Btn onClick={checkOut} icon={Square} color={`linear-gradient(135deg,${C.danger} 0%,#9B1C1C 100%)`}>Auschecken · Stunde erfassen</Btn>}
-    {a.status==="completed"&&<div style={{padding:"12px 16px",background:C.success+"15",border:`1px solid ${C.success}40`,borderRadius:10,color:C.success,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
-      <CheckCircle2 size={16}/> Stunde erfasst · {a.completedDur} Minuten
-    </div>}
-  </div>;
+  );
 }
 
-/* =========================================================
-   WOCHENPLAN
-   ========================================================= */
-function Wochenplan({slots,teachers,students,initialLocId}){
-  const [locId,setLocId]=useState(initialLocId||"heerdt");
-  const [dayIdx,setDayIdx]=useState(Math.min(appDay(today),4));
-  const [view,setView]=useState("week");
-  const [showAdd,setShowAdd]=useState(null);
-  const [showSlotDetail,setShowSlotDetail]=useState(null);
-  const [newSlot,setNewSlot]=useState({time:"14:00",teacherId:"",studentIds:[],type:"einzel",roomId:""});
-  const [localSlots,setLocalSlots]=useState(slots);
-  const [addStudentToSlot,setAddStudentToSlot]=useState(null);
+/* SHELL — wraps the app in the right container depending on device.
+ * Mobile (< 768px): phone-style full-bleed layout with bottom tabs (handled outside).
+ * Desktop (>= 768px): sidebar-left + content-right layout.
+ */
+function PhoneFrame({ children, isMobile }) {
+  if (isMobile) return <div style={{ position: "relative", width: "100vw", height: "100vh", background: C.bg, fontFamily: FF.body, color: C.textHi, overflow: "hidden" }}>{children}</div>;
+  // Desktop: just provide the global background — the actual sidebar/content split is built in the App component
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: C.bg,
+      fontFamily: FF.body, color: C.textHi,
+    }}>
+      {children}
+    </div>
+  );
+}
 
-  const loc=LOCATIONS.find(l=>l.id===locId);
-  const locSlots=localSlots.filter(s=>s.locationId===locId);
-  const rooms=ROOMS[locId]||[];
-  const slotsByLoc=lid=>localSlots.filter(s=>s.locationId===lid).length;
+/* LOGIN — Demo Rollenauswahl */
+function Login({ onLogin }) {
+  const [selected, setSelected] = React.useState(DEMO_USERS[0]);
+  const [showPw, setShowPw] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
-  const addSlot=()=>{
-    const id="new_"+Date.now();
-    const roomId=showAdd?.roomId||rooms[0]?.id;
-    setLocalSlots(prev=>[...prev,{id,day:dayIdx,locationId:locId,...newSlot,roomId}]);
-    setShowAdd(null);
-    setNewSlot({time:"14:00",teacherId:"",studentIds:[],type:"einzel"});
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => {
+      const profile = { ...selected, id: selected.id };
+      onLogin(profile);
+    }, 600);
   };
 
-  const addStudentToSlotFn=(slotId,studentId)=>{
-    setLocalSlots(prev=>prev.map(s=>s.id===slotId?{...s,studentIds:[...new Set([...s.studentIds,studentId])]}:s));
-    setAddStudentToSlot(null);
-  };
-
-  const SlotCard=({s,loc})=>{
-    const t=teachers.find(x=>x.id===s.teacherId);
-    const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
-    return <div onClick={()=>setShowSlotDetail(s)} style={{padding:"10px 12px",background:loc.color+"12",border:`1.5px solid ${loc.color}35`,borderRadius:8,cursor:"pointer",transition:"all .15s"}}
-      onMouseEnter={e=>{e.currentTarget.style.background=loc.color+"22";e.currentTarget.style.borderColor=loc.color+"80";}}
-      onMouseLeave={e=>{e.currentTarget.style.background=loc.color+"12";e.currentTarget.style.borderColor=loc.color+"35";}}>
-      <div style={{fontFamily:FF.display,fontSize:13,fontWeight:800,color:loc.color}}>{s.time}</div>
-      <div style={{fontSize:12,fontWeight:700,color:C.textHi,marginTop:2}}>{t?.name||"—"}</div>
-      <div style={{fontSize:10,color:C.textDim,marginTop:1}}>{studs.length>0?studs.map(s=>s.name).join(", "):"Keine Schüler"}</div>
-      <div style={{marginTop:5,display:"flex",gap:4}}>
-        <Badge color={s.type==="gruppe"?C.info:C.success}>{s.type==="gruppe"?`Gruppe · ${studs.length}`:"Einzel"}</Badge>
+  return (
+    <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", padding: "48px 28px 40px", background: C.bgGrad }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 18, fontFamily: FF.display }}>L</div>
+        <div>
+          <div style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Lernwelt</div>
+          <div style={{ fontSize: 11, color: C.textDim, letterSpacing: 1.5, fontWeight: 600, marginTop: 2 }}>VERWALTUNGSPORTAL</div>
+        </div>
       </div>
-    </div>;
-  };
 
-  return <div style={{padding:"28px 36px 60px"}}>
-    <div style={{marginBottom:22}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Admin · Wochenplan</div>
-      <h1 style={{fontFamily:FF.display,fontSize:30,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>Wochenplan</h1>
-    </div>
+      <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: "0 0 6px", color: C.textHi, letterSpacing: -0.5 }}>Demo-Zugang</h1>
+      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 22px", lineHeight: 1.5 }}>Wähle eine Rolle um den vollen Funktionsumfang zu erleben.</p>
 
-    {/* Standort Tabs — mit Stundenzahl immer sichtbar */}
-    <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
-      {LOCATIONS.map(l=>{
-        const cnt=slotsByLoc(l.id);
-        return <button key={l.id} onClick={()=>setLocId(l.id)} style={{padding:"9px 16px",borderRadius:10,background:locId===l.id?l.color:C.surface,border:`1.5px solid ${locId===l.id?l.color:C.border}`,color:locId===l.id?"#fff":C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",gap:6,transition:"all .15s"}}>
-          <MapPin size={12}/>{l.short}
-          <span style={{padding:"1px 8px",borderRadius:10,background:locId===l.id?"rgba(255,255,255,.25)":C.surfaceAlt,color:locId===l.id?"#fff":l.color,fontSize:11,fontWeight:800}}>{cnt}</span>
-        </button>;
-      })}
-    </div>
-
-    {/* View Toggle */}
-    <div style={{display:"flex",gap:4,marginBottom:18,background:C.surfaceAlt,padding:4,borderRadius:10,width:"fit-content"}}>
-      {[{id:"day",label:"Tagesansicht"},{id:"week",label:"Wochenübersicht"}].map(v=><button key={v.id} onClick={()=>setView(v.id)} style={{padding:"7px 16px",borderRadius:8,background:view===v.id?C.primary:"transparent",border:"none",color:view===v.id?"#fff":C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{v.label}</button>)}
-    </div>
-
-    {view==="day"&&<>
-      {/* Tag Tabs */}
-      <div style={{display:"flex",gap:6,marginBottom:18}}>
-        {WEEKDAYS.map((d,i)=>{
-          const cnt=locSlots.filter(s=>s.day===i).length;
-          return <button key={d} onClick={()=>setDayIdx(i)} style={{flex:1,padding:"11px 8px",borderRadius:10,background:dayIdx===i?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.surface,border:`1.5px solid ${dayIdx===i?"transparent":C.border}`,color:dayIdx===i?"#fff":C.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,textAlign:"center"}}>
-            <div>{d}</div>
-            <div style={{fontSize:11,marginTop:3,fontWeight:800,color:dayIdx===i?"rgba(255,255,255,.8)":(cnt>0?C.accent:C.textVeryDim)}}>{cnt} Std</div>
-          </button>;
-        })}
-      </div>
-      {/* Räume */}
-      <div style={{display:"grid",gridTemplateColumns:`repeat(${rooms.length},1fr)`,gap:12}}>
-        {rooms.map(room=>{
-          const rSlots=locSlots.filter(s=>s.day===dayIdx&&s.roomId===room.id).sort((a,b)=>a.time.localeCompare(b.time));
-          return <div key={room.id}>
-            <div style={{padding:"9px 12px",background:loc.color,borderRadius:"10px 10px 0 0",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:24,height:24,borderRadius:6,background:"rgba(255,255,255,.15)",display:"grid",placeItems:"center",color:"#fff",fontWeight:800,fontSize:10}}>{room.name.replace("Raum ","")}</div>
-              <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{room.name}</span>
-              <span style={{fontSize:10,color:"rgba(255,255,255,.55)",marginLeft:"auto"}}>{rSlots.length} Std</span>
-            </div>
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 10px 10px",padding:8,minHeight:120,display:"flex",flexDirection:"column",gap:6}}>
-              {rSlots.map(s=><SlotCard key={s.id} s={s} loc={loc}/>)}
-              <button onClick={()=>setShowAdd({roomId:room.id})} style={{padding:"8px 0",background:"transparent",border:`1.5px dashed ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                <Plus size={12}/> Hinzufügen
-              </button>
-            </div>
-          </div>;
-        })}
-      </div>
-    </>}
-
-    {view==="week"&&<div style={{overflowX:"auto"}}>
-      <table style={{width:"100%",borderCollapse:"separate",borderSpacing:"6px 0"}}>
-        <thead><tr>
-          {WEEKDAYS_LONG.map((d,i)=>{
-            const cnt=locSlots.filter(s=>s.day===i).length;
-            return <th key={d} style={{padding:"12px 14px",background:i===appDay(today)?C.accent:C.primary,color:"#fff",borderRadius:"10px 10px 0 0",fontSize:13,fontWeight:700,textAlign:"center"}}>
-              {d}<div style={{fontSize:11,opacity:.75,marginTop:2,fontWeight:800}}>{cnt} Std</div>
-            </th>;
-          })}
-        </tr></thead>
-        <tbody><tr>
-          {WEEKDAYS.map((_,di)=>{
-            const dSlots=locSlots.filter(s=>s.day===di).sort((a,b)=>a.time.localeCompare(b.time));
-            return <td key={di} style={{verticalAlign:"top",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"0 0 10px 10px",padding:8,minWidth:160}}>
-              {dSlots.length===0?<div style={{padding:"20px 0",textAlign:"center",color:C.textVeryDim,fontSize:12}}>Frei</div>:dSlots.map(s=>{
-                const t=teachers.find(x=>x.id===s.teacherId);
-                const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
-                const r=ROOMS[locId]?.find(x=>x.id===s.roomId);
-                return <div key={s.id} onClick={()=>setShowSlotDetail(s)} style={{marginBottom:6,padding:"8px 10px",background:loc.color+"10",border:`1px solid ${loc.color}25`,borderRadius:8,cursor:"pointer",transition:"all .15s"}}
-                  onMouseEnter={e=>e.currentTarget.style.background=loc.color+"22"}
-                  onMouseLeave={e=>e.currentTarget.style.background=loc.color+"10"}>
-                  <div style={{fontFamily:FF.display,fontWeight:800,fontSize:12,color:loc.color}}>{s.time}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:C.textHi,marginTop:1}}>{t?.name||"—"}</div>
-                  <div style={{fontSize:10,color:C.textDim}}>{r?.name} · {studs.length} Schüler</div>
-                </div>;
-              })}
-            </td>;
-          })}
-        </tr></tbody>
-      </table>
-    </div>}
-
-    {/* Slot Detail Modal */}
-    {showSlotDetail&&(()=>{
-      const s=showSlotDetail;
-      const t=teachers.find(x=>x.id===s.teacherId);
-      const studs=s.studentIds.map(id=>students.find(x=>x.id===id)).filter(Boolean);
-      const r=ROOMS[s.locationId]?.find(x=>x.id===s.roomId);
-      const loc2=LOCATIONS.find(l=>l.id===s.locationId);
-      const unassigned=students.filter(x=>!s.studentIds.includes(x.id));
-      return <div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.65)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>
-        <div style={{background:C.surface,borderRadius:20,width:480,maxHeight:"88vh",overflow:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.22)"}}>
-          <div style={{height:4,background:loc2?.color||C.primary,borderRadius:"20px 20px 0 0"}}/>
-          <div style={{padding:"20px 24px"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
-              <div>
-                <div style={{fontSize:11,fontWeight:800,color:loc2?.color,letterSpacing:1.5,marginBottom:4}}>{WEEKDAYS_LONG[s.day]} · {s.time} Uhr</div>
-                <h3 style={{fontFamily:FF.display,fontSize:20,fontWeight:800,color:C.textHi,margin:0}}>{r?.name} · {loc2?.name}</h3>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+          {DEMO_USERS.map(u => (
+            <button key={u.id} type="button" onClick={() => setSelected(u)} style={{
+              padding: "12px 14px", borderRadius: 12,
+              background: selected.id === u.id ? "rgba(244,145,86,.12)" : C.surface,
+              border: `1.5px solid ${selected.id === u.id ? C.primary : C.border}`,
+              cursor: "pointer", textAlign: "left", fontFamily: FF.body,
+              display: "flex", alignItems: "center", gap: 12,
+            }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: u.color, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 12, fontFamily: FF.display, flexShrink: 0 }}>{u.short}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: C.textHi }}>{u.name}</div>
+                <div style={{ fontSize: 11, color: C.textDim, marginTop: 1 }}>{u.role === "admin" ? "Administrator · alle Standorte" : "Lehrkraft · " + (TEACHERS.find(t => t.id === u.id)?.subjects?.join(", ") || "")}</div>
               </div>
-              <button onClick={()=>setShowSlotDetail(null)} style={{background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}><X size={20}/></button>
-            </div>
+              {selected.id === u.id && <Check size={16} color={C.primary}/>}
+            </button>
+          ))}
+        </div>
 
-            {/* Lehrkraft */}
-            <div style={{padding:"12px 14px",background:C.surfaceAlt,borderRadius:10,marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-              <Avatar short={t?.short||"?"} color={t?.color||C.primary} size={38}/>
-              <div>
-                <div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{t?.name||"Keine Lehrkraft"}</div>
-                <div style={{fontSize:11,color:C.textDim}}>{t?.subjects?.join(" · ")}</div>
-              </div>
-              <Badge color={s.type==="gruppe"?C.info:C.success} style={{marginLeft:"auto"}}>{s.type==="gruppe"?`Gruppe`:"Einzelstunde"}</Badge>
-            </div>
+        <div style={{ padding: "10px 14px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 10, marginBottom: 16, fontSize: 12, color: C.textDim }}>
+          Passwort: <strong style={{ color: C.textHi }}>demo1234</strong> · gilt für alle Accounts
+        </div>
 
-            {/* Schüler */}
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:C.textDim,letterSpacing:1.5,marginBottom:8,textTransform:"uppercase"}}>Schüler ({studs.length})</div>
-              {studs.map(st=><div key={st.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:C.surfaceAlt,borderRadius:8,marginBottom:6}}>
-                <Avatar short={st.short} size={30}/>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:C.textHi}}>{st.name}</div>
-                  <div style={{fontSize:10,color:C.textDim}}>Kl. {st.grade} · {st.subjects?.join(", ")}</div>
+        <button type="submit" disabled={loading} style={{ padding: 14, background: C.primaryGrad, border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          {loading ? "Anmelden…" : `Als ${selected.name} einloggen →`}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* TEACHER: APPOINTMENT CARD with check-in/out */
+function Stat({ label, value, color }) {
+  return (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 12px" }}>
+      <div style={{ fontFamily: FF.display, fontSize: 28, fontWeight: 700, color, lineHeight: 1, letterSpacing: -1 }}>{value}</div>
+      <div style={{ fontSize: 10, color: C.textDim, fontWeight: 700, letterSpacing: .8, marginTop: 6 }}>{label.toUpperCase()}</div>
+    </div>
+  );
+}
+
+function CheckedInCard({ apt, store, onClick, liveSeconds }) {
+  const students = apt.students || [];
+  const single = students.length === 1 ? students[0] : null;
+  const title = single ? single.name : `Gruppe · ${students.length} Schüler`;
+  const subLine = single ? `Klasse ${single.grade} · ${apt.subject}` : `${apt.time} · ${apt.room}`;
+  const elapsedSec = apt._checkedInTs ? Math.max(0, Math.floor((Date.now() - apt._checkedInTs) / 1000)) : 0;
+  const mins = Math.floor(elapsedSec / 60);
+  const secs = elapsedSec % 60;
+  return (
+    <button onClick={onClick} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", padding: 0, background: "transparent" }}>
+      <div style={{ position: "relative", padding: 20, borderRadius: 18, background: "linear-gradient(135deg, rgba(244,145,86,.18) 0%, rgba(231,111,81,.08) 100%)", border: `1.5px solid ${C.primary}80` }}>
+        <div style={{ position: "absolute", top: 14, right: 14, display: "flex", alignItems: "center", gap: 6, color: C.primary }}>
+          <span style={{ width: 8, height: 8, background: C.primary, borderRadius: 4, animation: "pulse 1.5s infinite" }}/>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>EINGECHECKT</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          {single ? (
+            <Avatar short={single.short} color={C.primary} size={48}/>
+          ) : (
+            <div style={{ display: "flex" }}>
+              {students.slice(0, 3).map((st, i) => (
+                <div key={st.id} style={{ marginLeft: i ? -12 : 0, borderRadius: "50%", border: `2px solid #2a2320` }}>
+                  <Avatar short={st.short} color={C.primary} size={42}/>
                 </div>
-                <LocBadge locationId={st.locationId}/>
-              </div>)}
+              ))}
+            </div>
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, color: C.textHi, letterSpacing: -0.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
+            <div style={{ fontSize: 12, color: C.textDim }}>{subLine}</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "rgba(0,0,0,.25)", borderRadius: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 11, color: C.textDim, fontWeight: 600, letterSpacing: .5 }}>LAUFZEIT</span>
+          <span style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, color: C.primary, letterSpacing: -0.5 }}>
+            {String(mins).padStart(2,"0")}:{String(secs).padStart(2,"0")}
+          </span>
+        </div>
+        <div style={{ padding: "12px 14px", background: C.danger, color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Square size={14}/> Stunde beenden & abrechnen
+        </div>
+      </div>
+    </button>
+  );
+}
 
-              {/* Schüler hinzufügen */}
-              {addStudentToSlot===s.id?<div style={{marginTop:8}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.textDim,marginBottom:6}}>Schüler hinzufügen:</div>
-                <div style={{maxHeight:180,overflow:"auto",display:"flex",flexDirection:"column",gap:4}}>
-                  {unassigned.map(st=><button key={st.id} onClick={()=>addStudentToSlotFn(s.id,st.id)} style={{padding:"8px 12px",background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:8,cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",alignItems:"center",gap:8}}>
+function AptCard({ apt, store, onClick, dim }) {
+  const students = apt.students || [];
+  const single = students.length === 1 ? students[0] : null;
+  const title = single ? single.name : (students.length ? students.map(s => s.name).join(", ") : "Keine Schüler");
+  const sub = single
+    ? `Kl. ${single.grade} · ${apt.subject} · ${apt.room}`
+    : `Gruppe · ${students.length} Schüler · ${apt.room}`;
+  return (
+    <button onClick={onClick} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", padding: 0, background: "transparent" }}>
+      <div style={{ display: "flex", gap: 14, padding: 14, borderRadius: 14, background: C.surface, border: `1px solid ${C.border}`, opacity: dim ? .65 : 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 50 }}>
+          <div style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, color: C.textHi, letterSpacing: -0.3 }}>{apt.time}</div>
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>{apt.plannedDur} Min</div>
+        </div>
+        <div style={{ width: 1, background: C.border }}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            {single ? (
+              <Avatar short={single.short} size={28}/>
+            ) : (
+              <div style={{ display: "flex" }}>
+                {students.slice(0, 3).map((st, i) => (
+                  <div key={st.id} style={{ marginLeft: i ? -8 : 0, borderRadius: "50%", border: `2px solid ${C.surface}` }}>
                     <Avatar short={st.short} size={26}/>
-                    <span style={{fontSize:12,fontWeight:600,color:C.textHi}}>{st.name}</span>
-                    <span style={{fontSize:10,color:C.textDim,marginLeft:"auto"}}>Kl.{st.grade}</span>
-                  </button>)}
-                </div>
-                <button onClick={()=>setAddStudentToSlot(null)} style={{marginTop:6,width:"100%",padding:"8px 0",background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbrechen</button>
-              </div>:<button onClick={()=>setAddStudentToSlot(s.id)} style={{marginTop:6,width:"100%",padding:"9px 0",background:"transparent",border:`1.5px dashed ${C.border}`,borderRadius:8,color:C.textDim,fontSize:12,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                <UserPlus size={12}/> Schüler hinzufügen
-              </button>}
-            </div>
-
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setShowSlotDetail(null)} style={{flex:1,padding:12,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Schließen</button>
-              <button style={{flex:1,padding:12,background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                <Edit2 size={12}/> Bearbeiten
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>;
-    })()}
-
-    {/* Add Slot Modal */}
-    {showAdd&&<div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>
-      <div style={{background:C.surface,borderRadius:18,padding:28,width:460,maxHeight:"88vh",overflow:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.2)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-          <h3 style={{fontFamily:FF.display,fontSize:18,fontWeight:800,color:C.textHi,margin:0}}>Stunde hinzufügen</h3>
-          <button onClick={()=>setShowAdd(null)} style={{background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}><X size={20}/></button>
-        </div>
-        <div style={{fontSize:12,color:C.accent,fontWeight:700,marginBottom:18}}>{LOCATIONS.find(l=>l.id===locId)?.name} · {ROOMS[locId]?.find(r=>r.id===showAdd.roomId)?.name} · {WEEKDAYS_LONG[dayIdx]}</div>
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Uhrzeit</label>
-            <select value={newSlot.time} onChange={e=>setNewSlot(p=>({...p,time:e.target.value}))} style={{width:"100%",padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body}}>
-              {["13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00"].map(t=><option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Lehrkraft</label>
-            <select value={newSlot.teacherId} onChange={e=>setNewSlot(p=>({...p,teacherId:e.target.value}))} style={{width:"100%",padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body}}>
-              <option value="">Auswählen…</option>
-              {teachers.map(t=><option key={t.id} value={t.id}>{t.name} · {t.subjects.join(", ")}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Art</label>
-            <div style={{display:"flex",gap:8}}>
-              {["einzel","gruppe"].map(v=><button key={v} onClick={()=>setNewSlot(p=>({...p,type:v}))} style={{flex:1,padding:"10px 0",borderRadius:8,background:newSlot.type===v?C.primary:C.surfaceAlt,border:`1.5px solid ${newSlot.type===v?C.primary:C.border}`,color:newSlot.type===v?"#fff":C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body,textTransform:"capitalize"}}>{v}</button>)}
-            </div>
-          </div>
-          {/* Schüler auswählen */}
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>
-              Schüler auswählen {newSlot.studentIds.length>0&&<span style={{color:C.accent}}>({newSlot.studentIds.length} gewählt)</span>}
-            </label>
-            <div style={{maxHeight:200,overflow:"auto",display:"flex",flexDirection:"column",gap:5,padding:2}}>
-              {students.map(s=>{
-                const on=newSlot.studentIds.includes(s.id);
-                const sloc=LOCATIONS.find(l=>l.id===s.locationId);
-                return <button key={s.id} onClick={()=>setNewSlot(p=>({...p,studentIds:on?p.studentIds.filter(x=>x!==s.id):[...p.studentIds,s.id]}))} style={{padding:"8px 12px",background:on?C.accentTint:C.surfaceAlt,border:`1.5px solid ${on?C.accent:C.border}`,borderRadius:8,cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",alignItems:"center",gap:10,transition:"all .1s"}}>
-                  <Avatar short={s.short} size={28}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:C.textHi}}>{s.name}</div>
-                    <div style={{fontSize:10,color:C.textDim}}>Kl.{s.grade} · {s.subjects.join(", ")}</div>
                   </div>
-                  <span style={{fontSize:10,fontWeight:700,color:sloc?.color,background:sloc?.color+"18",padding:"2px 6px",borderRadius:5,flexShrink:0}}>{sloc?.short}</span>
-                  {on&&<Check size={14} color={C.accent}/>}
-                </button>;
+                ))}
+              </div>
+            )}
+            <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
+          </div>
+          <div style={{ fontSize: 12, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>
+          <div style={{ marginTop: 6, display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, color: statusColor(apt.status), background: statusColor(apt.status) + "20", letterSpacing: .5 }}>
+            {statusLabel(apt.status).toUpperCase()}
+            {apt.status === "completed" && apt.completedDur && ` · ${apt.completedDur}m`}
+          </div>
+        </div>
+        <ChevronRight size={20} color={C.textVeryDim} style={{ alignSelf: "center", flexShrink: 0 }}/>
+      </div>
+    </button>
+  );
+}
+
+function TodayScreen({ user, store, onAptClick, liveSeconds }) {
+  const apts = store.aptsForToday(user.id);
+  const checkedIn = apts.find(a => a.status === "checked-in");
+  const upcoming = apts.filter(a => a.status === "scheduled");
+  const completed = apts.filter(a => a.status === "completed");
+  const completedHrs = completed.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+  const todayLabel = new Date().toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" });
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ color: C.textDim, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>{todayLabel.toUpperCase()}</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>
+          Hallo {user.name.split(" ")[0]},<br/><span style={{ color: C.primary }}>{apts.length} Termine</span> heute.
+        </h1>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 28 }}>
+        <Stat label="Erfasst" value={`${completedHrs.toFixed(1)}h`} color={C.success}/>
+        <Stat label="Aktuell" value={checkedIn ? 1 : 0} color={C.primary}/>
+        <Stat label="Geplant" value={upcoming.length} color={C.info}/>
+      </div>
+      {checkedIn && <div style={{ marginBottom: 24 }}><SectionHeader>Eingecheckt</SectionHeader><CheckedInCard apt={checkedIn} store={store} onClick={() => onAptClick(checkedIn.id)} liveSeconds={liveSeconds}/></div>}
+      {upcoming.length > 0 && <div style={{ marginBottom: 24 }}><SectionHeader>Als nächstes</SectionHeader><div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{upcoming.map(a => <AptCard key={a.id} apt={a} store={store} onClick={() => onAptClick(a.id)}/>)}</div></div>}
+      {completed.length > 0 && <div><SectionHeader>Bereits erfasst</SectionHeader><div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{completed.map(a => <AptCard key={a.id} apt={a} store={store} onClick={() => onAptClick(a.id)} dim/>)}</div></div>}
+    </div>
+  );
+}
+
+function WeekScreen({ user, store, onAptClick }) {
+  const today = new Date();
+  const mon = mondayOf(today);
+  const todayIdx = appDayFromJS(today); // 0=Mo..6=So
+  const weekDates = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(mon); d.setDate(mon.getDate() + i); return d;
+  });
+  const [selectedDay, setSelectedDay] = useState(todayIdx >= 0 && todayIdx <= 4 ? todayIdx : 0);
+  const all = store.aptsForWeek(user.id);
+  const kwLabel = `KW ${isoWeek(today)} · ${mon.toLocaleDateString("de-DE", { month: "long", year: "numeric" }).toUpperCase()}`;
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ color: C.textDim, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>{kwLabel}</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>Diese Woche</h1>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 22 }}>
+        {WEEKDAYS.map((d, i) => {
+          const isSelected = i === selectedDay;
+          const isToday = i === todayIdx;
+          const count = all.filter(a => a.day === i).length;
+          return (
+            <button key={d} onClick={() => setSelectedDay(i)} style={{ padding: "10px 4px", border: `1.5px solid ${isSelected ? C.primary : C.border}`, background: isSelected ? "rgba(244,145,86,.12)" : C.surface, borderRadius: 12, cursor: "pointer", textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: isSelected ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5 }}>{d.toUpperCase()}</div>
+              <div style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, color: isSelected ? C.primary : C.textHi, marginTop: 2, lineHeight: 1 }}>{weekDates[i].getDate()}</div>
+              <div style={{ marginTop: 4, fontSize: 9, fontWeight: 700, color: count > 0 ? (isSelected ? C.primary : C.textDim) : C.textVeryDim }}>{count > 0 ? `${count} T.` : "—"}</div>
+              {isToday && <div style={{ width: 4, height: 4, borderRadius: 2, background: C.primary, margin: "4px auto 0" }}/>}
+            </button>
+          );
+        })}
+      </div>
+      <SectionHeader>{WEEKDAYS_LONG[selectedDay]}{selectedDay === todayIdx ? " (heute)" : ""}</SectionHeader>
+      {all.filter(a => a.day === selectedDay).length === 0 ? (
+        <div style={{ padding: "40px 20px", textAlign: "center", color: C.textDim, background: C.surface, borderRadius: 14, border: `1px dashed ${C.border}` }}>
+          <Coffee size={28} style={{ marginBottom: 10, opacity: .5 }}/>
+          <div style={{ fontSize: 13 }}>Keine Stunden an diesem Tag.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {all.filter(a => a.day === selectedDay).sort((a,b) => a.time.localeCompare(b.time)).map(a => <AptCard key={a.id} apt={a} store={store} onClick={() => onAptClick(a.id)}/>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudentsScreen({ user, store, onStudentClick }) {
+  const [q, setQ] = useState("");
+  const myStudents = store.students.filter(s => s.teacherId === user.id);
+  const filtered = myStudents.filter(s => s.name.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ color: C.textDim, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>MEINE SCHÜLER</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: -0.6 }}>{myStudents.length} Schüler</h1>
+      </div>
+      <div style={{ position: "relative", marginBottom: 16 }}>
+        <Search size={16} color={C.textDim} style={{ position: "absolute", left: 14, top: 14 }}/>
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Nach Namen suchen…" style={{ width: "100%", padding: "12px 12px 12px 40px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 14, fontFamily: FF.body, outline: "none", boxSizing: "border-box" }}/>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {filtered.map(s => (
+          <button key={s.id} onClick={() => onStudentClick(s.id)} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", padding: 0, background: "transparent" }}>
+            <div style={{ display: "flex", gap: 14, padding: 14, borderRadius: 14, background: C.surface, border: `1px solid ${C.border}`, alignItems: "center" }}>
+              <Avatar short={s.short} size={42}/>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.textHi, letterSpacing: -0.2 }}>{s.name}</div>
+                <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>Klasse {s.grade} · {s.subjects.join(", ")}</div>
+                <div style={{ marginTop: 6, display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, background: C.primary + "18", color: C.primary, letterSpacing: .3 }}>{s.focus}</div>
+              </div>
+              <ChevronRight size={18} color={C.textVeryDim}/>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BigStat({ value, unit, label, color }) {
+  return (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 14px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+        <span style={{ fontFamily: FF.display, fontSize: 32, fontWeight: 700, color, letterSpacing: -1.2, lineHeight: 1 }}>{value}</span>
+        <span style={{ fontSize: 14, color: C.textDim, fontWeight: 600 }}>{unit}</span>
+      </div>
+      <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: .8, marginTop: 8 }}>{label.toUpperCase()}</div>
+    </div>
+  );
+}
+
+function Row({ icon: Icon, label, sub, action, last, onClick }) {
+  return (
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: last ? "none" : `1px solid ${C.border}`, cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: C.surfaceHi, display: "grid", placeItems: "center", marginRight: 12 }}>
+        <Icon size={15} color={C.textDim}/>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: C.textHi }}>{label}</div>
+        {sub && <div style={{ fontSize: 12, color: C.textDim, marginTop: 1 }}>{sub}</div>}
+      </div>
+      {action ? <span style={{ fontSize: 12, color: C.primary, fontWeight: 700 }}>{action}</span> : <ChevronRight size={16} color={C.textVeryDim}/>}
+    </div>
+  );
+}
+
+function ProfileScreen({ user, store, onLogout, onShowTimesheet }) {
+  const nowD = new Date();
+  const monthKey = isoDateKey(nowD).slice(0, 7);
+  const curMonthName = nowD.toLocaleDateString("de-DE", { month: "long" });
+  const curMonthFull = nowD.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const prevMonthFull = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const open = store.openHoursForTeacher(user.id).filter(a => !a.dateKey || a.dateKey.slice(0, 7) === monthKey);
+  const openHrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+  const billedThisYear = store.billedHoursForTeacher(user.id);
+  const billedHrs = billedThisYear.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 22, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <Avatar short={user.short} color={user.color} size={80}/>
+        <div style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, marginTop: 14, color: C.textHi, letterSpacing: -0.4 }}>{user.name}</div>
+        <div style={{ fontSize: 13, color: C.textDim, marginTop: 3 }}>{user.subjects.join(" · ")}</div>
+      </div>
+      <SectionHeader>Stundenkonto</SectionHeader>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
+        <BigStat value={openHrs.toFixed(1)} unit="h" label={`Offen (${curMonthName})`} color={C.primary}/>
+        <BigStat value={billedHrs.toFixed(1)} unit="h" label="Abgerechnet" color={C.success}/>
+      </div>
+      <SectionHeader>Stundenzettel</SectionHeader>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 28 }}>
+        <Row icon={FileText} label={`${curMonthFull} (offen)`} sub={`${openHrs.toFixed(1)} Std. erfasst`} action="Anzeigen" onClick={() => onShowTimesheet && onShowTimesheet()}/>
+        <Row icon={Download} label="CSV-Export" sub="Erfasste Stunden als CSV" action="Exportieren" last onClick={() => store.exportCSV(user.id)}/>
+      </div>
+      <SectionHeader>Einstellungen</SectionHeader>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 28 }}>
+        <Row icon={Bell} label="Benachrichtigungen" sub="Erinnerung 15 Min vorher"/>
+        <Row icon={Settings} label="Konto" sub={user.email}/>
+        <Row icon={AlertCircle} label="Hilfe & Support" last/>
+      </div>
+      <button onClick={onLogout} style={{ width: "100%", padding: 14, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.danger, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <LogOut size={16}/> Abmelden
+      </button>
+    </div>
+  );
+}
+
+/* STUNDENZETTEL — Detail der erfassten Stunden eines Monats (Lehrer) */
+function Stundenzettel({ user, store, onBack }) {
+  const nowD = new Date();
+  const monthKey = isoDateKey(nowD).slice(0, 7);
+  const monthFull = nowD.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const lessons = store.appointments
+    .filter(a => a.teacherId === user.id && a.status === "completed" && (a.dateKey || "").slice(0, 7) === monthKey)
+    .sort((a, b) => (a.dateKey || "").localeCompare(b.dateKey || "") || (a.time || "").localeCompare(b.time || ""));
+  const totalMin = lessons.reduce((s, a) => s + (a.completedDur || 0), 0);
+  const totalHrs = totalMin / 60;
+  const rate = user.rate || 0;
+  return (
+    <div style={{ padding: "16px 20px 40px" }}>
+      <button onClick={onBack} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 18, fontFamily: FF.body }}>
+        <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+      </button>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ color: C.textDim, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>STUNDENZETTEL</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5, color: C.textHi }}>{monthFull}</h1>
+      </div>
+
+      <div style={{ padding: 18, background: "linear-gradient(135deg, rgba(244,145,86,.16) 0%, rgba(231,111,81,.06) 100%)", border: `1.5px solid ${C.primary}80`, borderRadius: 14, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontFamily: FF.display, fontSize: 34, fontWeight: 700, color: C.textHi, letterSpacing: -1.2, lineHeight: 1 }}>{totalHrs.toFixed(1)}</span>
+          <span style={{ fontSize: 14, color: C.textDim, fontWeight: 600 }}>Stunden</span>
+        </div>
+        <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>{lessons.length} erfasste Stunden{rate ? ` · ${fmtEur(totalHrs * rate)}` : ""}</div>
+      </div>
+
+      <button onClick={() => store.exportCSV(user.id)} style={{ width: "100%", padding: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+        <Download size={14}/> Als CSV exportieren
+      </button>
+
+      <SectionHeader>Erfasste Stunden ({lessons.length})</SectionHeader>
+      {lessons.length === 0 ? (
+        <div style={{ padding: "30px 20px", textAlign: "center", color: C.textDim, background: C.surface, borderRadius: 14, fontSize: 13, border: `1px dashed ${C.border}` }}>
+          Noch keine erfassten Stunden in diesem Monat.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {lessons.map(a => {
+            const names = (a.studentIds || []).map(id => store.studentById(id)?.name).filter(Boolean).join(", ") || "—";
+            const isGroup = (a.studentIds || []).length > 1;
+            return (
+              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+                <span style={{ fontFamily: FF.display, fontWeight: 700, color: C.textHi, minWidth: 78, fontSize: 13 }}>{a.date}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isGroup ? `Gruppe: ${names}` : names}</div>
+                  <div style={{ fontSize: 11, color: C.textDim }}>{a.time}{a.billed ? " · abgerechnet" : a.heldMethod === "confirmed" ? " · bestätigt" : ""}</div>
+                </div>
+                <span style={{ fontFamily: FF.display, fontWeight: 700, color: a.billed ? C.textDim : C.success, fontSize: 14, flexShrink: 0 }}>{a.completedDur}m</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Detail({ icon: Icon, label, value, valueColor }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.textDim, fontSize: 11, fontWeight: 600, marginBottom: 4, letterSpacing: .3 }}>
+        <Icon size={12}/> {label.toUpperCase()}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: valueColor || C.textHi }}>{value}</div>
+    </div>
+  );
+}
+
+/* APPOINTMENT DETAIL — Stunde mit Schülerliste; Check-in/out gilt für die ganze Stunde */
+function AppointmentDetail({ aptId, store, onBack, onStudentClick, liveSeconds }) {
+  const apt = store.lessonById(aptId);
+  const students = apt?.students || [];
+  const single = students.length === 1 ? students[0] : null;
+  const startTs = apt ? new Date(`${apt.dateKey}T${apt.time}:00`).getTime() : 0;
+  const canStart = Date.now() >= startTs;
+  const [notes, setNotes] = useState(apt?.notes || "");
+  const [hasHomework, setHasHomework] = useState(false);
+
+  const handleCheckIn = () => { if (apt && canStart) store.checkIn(apt); };
+  const handleConfirm = () => { if (apt && canStart) { store.confirmHeld(apt, notes); onBack(); } };
+  const handleCheckOut = () => {
+    if (apt) store.checkOut(apt.id, notes);
+    onBack();
+  };
+
+  // Echte Laufzeit seit Check-in (liveSeconds als Sekunden-Takt zum Neu-Rendern)
+  const elapsedSec = apt?._checkedInTs ? Math.max(0, Math.floor((Date.now() - apt._checkedInTs) / 1000)) : 0;
+  const mins = Math.floor(elapsedSec / 60);
+  const secs = elapsedSec % 60;
+
+  if (!apt) {
+    return (
+      <div style={{ padding: "16px 20px 40px" }}>
+        <button onClick={onBack} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 18, fontFamily: FF.body }}>
+          <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+        </button>
+        <div style={{ padding: "40px 20px", textAlign: "center", color: C.textDim }}>Diese Stunde ist nicht mehr verfügbar.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "16px 20px 40px" }}>
+      <button onClick={onBack} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 18, fontFamily: FF.body }}>
+        <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+      </button>
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
+        {single ? (
+          <Avatar short={single.short} size={56}/>
+        ) : (
+          <div style={{ display: "flex" }}>
+            {students.slice(0, 3).map((st, i) => (
+              <div key={st.id} style={{ marginLeft: i ? -14 : 0, borderRadius: "50%", border: `2px solid ${C.bg}` }}>
+                <Avatar short={st.short} size={48}/>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, color: C.textHi, letterSpacing: -0.4, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {single ? single.name : `Gruppe · ${students.length} Schüler`}
+          </div>
+          <div style={{ fontSize: 13, color: C.textDim, marginTop: 4 }}>
+            {single ? `Klasse ${single.grade} · seit ${single.since}` : `${apt.time} · ${apt.room}`}
+          </div>
+        </div>
+      </div>
+      {single && (
+        <div style={{ marginTop: 6, marginBottom: 22, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {single.focus && <Tag color={C.primary}>{single.focus}</Tag>}
+          {apt.subject && <Tag>{apt.subject}</Tag>}
+        </div>
+      )}
+      {!single && <div style={{ height: 16 }}/>}
+
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <Detail icon={Clock} label="Geplant" value={`${apt.time} · ${apt.plannedDur} Min`}/>
+          <Detail icon={MapPin} label="Ort" value={apt.room}/>
+          {apt.checkedInAt && <Detail icon={Play} label="Check-in" value={apt.checkedInAt} valueColor={C.primary}/>}
+          {apt.checkedOutAt && <Detail icon={Square} label="Check-out" value={apt.checkedOutAt} valueColor={C.success}/>}
+          {apt.completedDur && <Detail icon={Calendar} label="Erfasst" value={`${apt.completedDur} Min`} valueColor={C.success}/>}
+          {apt.status === "scheduled" && <Detail icon={Calendar} label="Status" value="Bevorstehend" valueColor={C.info}/>}
+        </div>
+      </div>
+
+      {/* Live timer for checked-in */}
+      {apt.status === "checked-in" && (
+        <div style={{ padding: 18, background: "linear-gradient(135deg, rgba(244,145,86,.18) 0%, rgba(231,111,81,.08) 100%)", border: `1.5px solid ${C.primary}80`, borderRadius: 14, marginBottom: 22, textAlign: "center" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 1.5, marginBottom: 8 }}>STUNDE LÄUFT</div>
+          <div style={{ fontFamily: FF.display, fontSize: 44, fontWeight: 700, color: C.textHi, letterSpacing: -2, lineHeight: 1 }}>
+            {String(mins).padStart(2,"0")}:{String(secs).padStart(2,"0")}
+          </div>
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>seit Check-in um {apt.checkedInAt}</div>
+        </div>
+      )}
+
+      {/* Schülerliste der Stunde */}
+      <SectionHeader>Schüler in dieser Stunde ({students.length})</SectionHeader>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
+        {students.length === 0 && (
+          <div style={{ padding: "14px 16px", background: C.surfaceLo, border: `1px dashed ${C.border}`, borderRadius: 12, fontSize: 13, color: C.textDim }}>Keine Schüler hinterlegt.</div>
+        )}
+        {students.map(st => (
+          <button key={st.id} onClick={() => onStudentClick && onStudentClick(st.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, cursor: "pointer", textAlign: "left", width: "100%", fontFamily: FF.body }}>
+            <Avatar short={st.short} size={34}/>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.name}</div>
+              <div style={{ fontSize: 12, color: C.textDim }}>Kl. {st.grade} · {st.subjects?.length ? st.subjects.join(" · ") : "—"}</div>
+            </div>
+            <ChevronRight size={18} color={C.textVeryDim} style={{ flexShrink: 0 }}/>
+          </button>
+        ))}
+      </div>
+
+      {single && single.notes && (
+        <>
+          <SectionHeader>Letzter Stand</SectionHeader>
+          <div style={{ padding: "14px 16px", background: C.surfaceLo, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 22, fontSize: 13, color: C.text, lineHeight: 1.5 }}>{single.notes}</div>
+        </>
+      )}
+
+      <SectionHeader>{apt.status === "completed" ? "Notizen aus dieser Stunde" : "Notizen"}</SectionHeader>
+      <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Was habt ihr gemacht? Worauf reagiert die Gruppe?" style={{ width: "100%", minHeight: 100, padding: "14px 16px", borderRadius: 14, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 14, fontFamily: FF.body, outline: "none", boxSizing: "border-box", resize: "vertical", lineHeight: 1.5 }}/>
+
+      {apt.status !== "completed" && (
+        <>
+          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14 }}>
+            <span style={{ fontSize: 14, color: C.textHi }}>Hausaufgaben aufgegeben?</span>
+            <button onClick={() => setHasHomework(!hasHomework)} style={{ width: 48, height: 28, borderRadius: 14, background: hasHomework ? C.primary : C.borderHi, border: "none", cursor: "pointer", position: "relative", padding: 0 }}>
+              <span style={{ position: "absolute", top: 3, left: hasHomework ? 23 : 3, width: 22, height: 22, borderRadius: 11, background: "#fff", transition: "left .2s" }}/>
+            </button>
+          </div>
+
+          <div style={{ marginTop: 22 }}>
+            {apt.status === "scheduled" ? (
+              canStart ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <PrimaryButton onClick={handleCheckIn} icon={Play}>Stunde starten · einchecken</PrimaryButton>
+                  <button onClick={handleConfirm} style={{ width: "100%", padding: 14, background: "transparent", border: `1.5px solid ${C.success}`, borderRadius: 12, color: C.success, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    <Check size={16}/> Als gehalten bestätigen
+                  </button>
+                  <div style={{ fontSize: 11, color: C.textVeryDim, textAlign: "center" }}>
+                    Einchecken misst die Zeit live · Bestätigen bucht die geplanten 60 Min.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <PrimaryButton onClick={() => {}} icon={Clock} disabled>Startet um {apt.time}</PrimaryButton>
+                  <div style={{ marginTop: 8, fontSize: 12, color: C.textDim, textAlign: "center" }}>
+                    Die Stunde kann erst ab Beginn ({apt.time}) gestartet werden.
+                  </div>
+                </>
+              )
+            ) : (
+              <PrimaryButton onClick={handleCheckOut} icon={Square} color={`linear-gradient(135deg, ${C.danger} 0%, ${C.primaryDk} 100%)`}>
+                Auschecken & Stunde erfassen
+              </PrimaryButton>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function StudentProfile({ studentId, store, onBack, isAdmin, onRemoved }) {
+  const s = store.studentById(studentId);
+  if (!s) return null;
+  const apts = store.appointments.filter(a => a.studentIds?.includes(studentId));
+  const currentTeacher = s.teacherId ? store.teacherById(s.teacherId) : null;
+
+  const [mode, setMode] = useState("view"); // "view" | "edit"
+  const [showTeacherPicker, setShowTeacherPicker] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  // Edit state
+  const [eName, setEName] = useState(s.name);
+  const [eGrade, setEGrade] = useState(s.grade);
+  const [eFocus, setEFocus] = useState(s.focus);
+  const [eSubjects, setESubjects] = useState(s.subjects);
+  const [eNotes, setENotes] = useState(s.notes);
+
+  const startEdit = () => {
+    setEName(s.name); setEGrade(s.grade); setEFocus(s.focus);
+    setESubjects(s.subjects); setENotes(s.notes);
+    setMode("edit");
+  };
+  const saveEdit = () => {
+    store.updateStudent(s.id, {
+      name: eName, grade: Number(eGrade) || 1, focus: eFocus,
+      subjects: eSubjects, notes: eNotes,
+    });
+    setMode("view");
+  };
+  const handleRemove = () => {
+    store.removeStudent(s.id);
+    setConfirmRemove(false);
+    if (onRemoved) onRemoved();
+    else onBack();
+  };
+  const handleReassign = (newTeacherId) => {
+    store.assignStudent(s.id, newTeacherId);
+    setShowTeacherPicker(false);
+  };
+
+  if (mode === "edit") {
+    return (
+      <div style={{ padding: "16px 20px 40px" }}>
+        <button onClick={() => setMode("view")} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 18, fontFamily: FF.body }}>
+          <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+        </button>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>SCHÜLER BEARBEITEN</div>
+          <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.4, color: C.textHi }}>{s.name}</h1>
+        </div>
+        <Field label="Name" value={eName} onChange={setEName}/>
+        <Field label="Klasse (1–13)" value={String(eGrade)} onChange={(v) => setEGrade(v)} type="number"/>
+        <Field label="Schwerpunkt" value={eFocus} onChange={setEFocus} placeholder="z.B. LRS-Förderung, ZAP-Vorbereitung"/>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Fächer</div>
+          <SubjectsPicker selected={eSubjects} onChange={setESubjects}/>
+        </div>
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Notizen</div>
+          <textarea value={eNotes} onChange={e => setENotes(e.target.value)} placeholder="Was sollten Lehrer wissen?" style={{ width: "100%", minHeight: 80, padding: "12px 14px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 13, fontFamily: FF.body, outline: "none", boxSizing: "border-box", resize: "vertical", lineHeight: 1.5 }}/>
+        </div>
+        <PrimaryButton onClick={saveEdit} icon={Check}>Änderungen speichern</PrimaryButton>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "16px 20px 40px" }}>
+      <button onClick={onBack} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 18, fontFamily: FF.body }}>
+        <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+      </button>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 22 }}>
+        <Avatar short={s.short} size={72}/>
+        <div style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, marginTop: 14, color: C.textHi, letterSpacing: -0.4 }}>{s.name}</div>
+        <div style={{ fontSize: 13, color: C.textDim, marginTop: 4 }}>Klasse {s.grade} · seit {s.since}</div>
+        <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+          <Tag color={C.primary}>{s.focus}</Tag>
+          {s.subjects.map(sub => <Tag key={sub}>{sub}</Tag>)}
+        </div>
+      </div>
+
+      {/* Admin actions */}
+      {isAdmin && (
+        <>
+          <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+            <button onClick={startEdit} style={{ flex: 1, padding: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Edit2 size={13}/> Bearbeiten
+            </button>
+            <button onClick={() => setConfirmRemove(true)} style={{ flex: 1, padding: 12, background: "transparent", border: `1px solid ${C.danger}80`, borderRadius: 12, color: C.danger, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Trash2 size={13}/> Entfernen
+            </button>
+          </div>
+
+          <SectionHeader>Lehrkraft</SectionHeader>
+          <button onClick={() => setShowTeacherPicker(true)} style={{ width: "100%", padding: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, marginBottom: 22, display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left" }}>
+            {currentTeacher ? (
+              <>
+                <Avatar short={currentTeacher.short} color={currentTeacher.color} size={36}/>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi }}>{currentTeacher.name}</div>
+                  <div style={{ fontSize: 11, color: C.textDim, marginTop: 1 }}>Tippen zum Wechseln</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ width: 36, height: 36, borderRadius: 18, background: C.warn + "22", display: "grid", placeItems: "center" }}>
+                  <AlertCircle size={18} color={C.warn}/>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: C.warn }}>Keine Zuweisung</div>
+                  <div style={{ fontSize: 11, color: C.textDim, marginTop: 1 }}>Tippen, um Lehrkraft zu wählen</div>
+                </div>
+              </>
+            )}
+            <ChevronRight size={18} color={C.textVeryDim}/>
+          </button>
+        </>
+      )}
+
+      <SectionHeader>Notizen</SectionHeader>
+      <div style={{ padding: "14px 16px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 22, fontSize: 13, color: C.text, lineHeight: 1.5, minHeight: 50 }}>
+        {s.notes || <span style={{ color: C.textVeryDim }}>Noch keine Notizen.</span>}
+      </div>
+      <SectionHeader>Termine ({apts.length})</SectionHeader>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {apts.slice(0, 6).map(a => (
+          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, background: statusColor(a.status) }}/>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.textHi }}>{a.date} · {a.time}</div>
+              <div style={{ fontSize: 11, color: C.textDim }}>{a.type === "gruppe" ? "Gruppe" : "Einzel"} · {a.room}</div>
+            </div>
+            {a.completedDur && <span style={{ fontSize: 11, color: C.success, fontWeight: 700 }}>{a.completedDur}m</span>}
+          </div>
+        ))}
+      </div>
+
+      {/* Teacher picker modal */}
+      {showTeacherPicker && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div style={{ background: C.surface, borderRadius: "20px 20px 0 0", padding: 22, width: "100%", maxHeight: "85%", overflow: "auto", borderTop: `1px solid ${C.border}` }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.borderHi, margin: "0 auto 18px" }}/>
+            <h3 style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, margin: "0 0 4px", color: C.textHi }}>Lehrkraft wählen</h3>
+            <p style={{ fontSize: 12, color: C.textDim, margin: "0 0 16px" }}>Passende Lehrer für {s.subjects.join(", ") || "—"}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {store.teachers.map(t => {
+                const matches = subjectsMatch(t.subjects, s.subjects);
+                const isCurrent = t.id === s.teacherId;
+                const load = store.students.filter(x => x.teacherId === t.id).length;
+                return (
+                  <button key={t.id} onClick={() => handleReassign(t.id)} disabled={isCurrent} style={{ width: "100%", textAlign: "left", border: `1.5px solid ${isCurrent ? C.primary : matches ? C.success + "60" : C.border}`, cursor: isCurrent ? "default" : "pointer", padding: 12, background: isCurrent ? "rgba(244,145,86,.1)" : C.surfaceLo, borderRadius: 12, display: "flex", alignItems: "center", gap: 10, opacity: isCurrent ? .7 : 1 }}>
+                    <Avatar short={t.short} color={t.color} size={34}/>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: C.textHi }}>{t.name}</span>
+                        {isCurrent && <span style={{ padding: "1px 6px", background: C.primary + "33", color: C.primary, fontSize: 9, fontWeight: 700, borderRadius: 4 }}>AKTUELL</span>}
+                        {matches && !isCurrent && <span style={{ padding: "1px 6px", background: C.success + "22", color: C.success, fontSize: 9, fontWeight: 700, borderRadius: 4 }}>PASST</span>}
+                      </div>
+                      <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{t.subjects.join(" · ")} · {load} Schüler</div>
+                    </div>
+                  </button>
+                );
               })}
             </div>
-          </div>
-          <div style={{display:"flex",gap:10,marginTop:4}}>
-            <button onClick={()=>setShowAdd(null)} style={{flex:1,padding:12,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbrechen</button>
-            <button onClick={addSlot} disabled={!newSlot.teacherId} style={{flex:1,padding:12,background:newSlot.teacherId?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.border,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:newSlot.teacherId?"pointer":"not-allowed",fontFamily:FF.body}}>
-              Stunde anlegen
-            </button>
+            <button onClick={() => setShowTeacherPicker(false)} style={{ width: "100%", marginTop: 14, padding: 12, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
           </div>
         </div>
-      </div>
-    </div>}
-  </div>;
+      )}
+
+      {/* Remove confirmation */}
+      {confirmRemove && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.danger}40`, borderRadius: 18, padding: 22, width: "100%" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: C.danger + "22", display: "grid", placeItems: "center", margin: "0 auto 14px" }}>
+              <AlertCircle size={28} color={C.danger}/>
+            </div>
+            <h3 style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: C.textHi, textAlign: "center" }}>{s.name} entfernen?</h3>
+            <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, margin: "0 0 22px", textAlign: "center" }}>
+              Der Schüler wird aus der Liste gelöscht. Bereits eingecheckte Stunden bleiben für die Buchhaltung erhalten.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmRemove(false)} style={{ flex: 1, padding: 14, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
+              <button onClick={handleRemove} style={{ flex: 1, padding: 14, background: C.danger, border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Ja, entfernen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* =========================================================
-   SCHÜLER
-   ========================================================= */
-function Schueler({students,setStudents,teachers,setView}){
-  const [q,setQ]=useState("");
-  const [locF,setLocF]=useState("all");
-  const [showAdd,setShowAdd]=useState(false);
-  const [draft,setDraft]=useState({name:"",grade:"",subjects:[],focus:"",notes:"",locationId:"heerdt",teacherId:""});
-
-  const filtered=students.filter(s=>(locF==="all"||s.locationId===locF)&&(s.name.toLowerCase().includes(q.toLowerCase())||s.subjects.some(x=>x.toLowerCase().includes(q.toLowerCase()))));
-
-  const addStudent=()=>{
-    const id="s_"+Date.now();
-    const short=initials(draft.name);
-    setStudents(prev=>[...prev,{id,short,...draft,grade:parseInt(draft.grade)||1,since:new Date().toLocaleDateString("de-DE",{month:"short",year:"numeric"})}]);
-    setShowAdd(false);
-    setDraft({name:"",grade:"",subjects:[],focus:"",notes:"",locationId:"heerdt",teacherId:""});
-  };
-
-  return <div style={{padding:"32px 40px 60px"}}>
-    <div style={{marginBottom:24}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Admin · Schüler</div>
-      <h1 style={{fontFamily:FF.display,fontSize:32,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>{students.length} Schülerinnen & Schüler</h1>
-    </div>
-
-    <div style={{display:"flex",gap:12,marginBottom:22}}>
-      <div style={{flex:1,position:"relative"}}>
-        <Search size={15} color={C.textDim} style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)"}}/>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Name oder Fach…" style={{width:"100%",padding:"11px 12px 11px 38px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surface,color:C.textHi,fontSize:14,fontFamily:FF.body,outline:"none",boxSizing:"border-box"}}/>
-      </div>
-      <select value={locF} onChange={e=>setLocF(e.target.value)} style={{padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surface,color:C.textHi,fontSize:13,fontFamily:FF.body,cursor:"pointer"}}>
-        <option value="all">Alle Standorte</option>
-        {LOCATIONS.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
-      </select>
-      <button onClick={()=>setShowAdd(true)} style={{padding:"11px 18px",background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-        <UserPlus size={14}/> Neu anlegen
-      </button>
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
-      {filtered.map(s=>{
-        const t=teachers.find(x=>x.id===s.teacherId);
-        const loc=LOCATIONS.find(l=>l.id===s.locationId);
-        return <div key={s.id} onClick={()=>setView({type:"student",id:s.id})} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:18,cursor:"pointer",transition:"all .2s",position:"relative",overflow:"hidden",boxShadow:"0 1px 4px rgba(26,58,107,.05)"}}
-          onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 24px rgba(26,58,107,.12)";e.currentTarget.style.borderColor=loc?.color||C.primary;}}
-          onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(26,58,107,.05)";e.currentTarget.style.borderColor=C.border;}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:loc?.color||C.primary}}/>
-          <div style={{paddingTop:6,display:"flex",alignItems:"flex-start",gap:12,marginBottom:14}}>
-            <Avatar short={s.short} size={42}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:800,fontSize:15,color:C.textHi}}>{s.name}</div>
-              <div style={{fontSize:12,color:C.textDim,marginTop:2}}>Klasse {s.grade} · seit {s.since}</div>
-              <div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{s.subjects.map(sub=><Badge key={sub} color={C.primary}>{sub}</Badge>)}</div>
-            </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:12,borderTop:`1px solid ${C.border}`}}>
-            {t?<div style={{display:"flex",alignItems:"center",gap:8}}><Avatar short={t.short} color={t.color} size={22}/><span style={{fontSize:11,color:C.textDim}}>{t.name}</span></div>:<span style={{fontSize:11,color:C.warn,fontWeight:700}}>Keine Zuweisung</span>}
-            <LocBadge locationId={s.locationId}/>
-          </div>
-        </div>;
-      })}
-    </div>
-
-    {/* Add Student Modal */}
-    {showAdd&&<div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>
-      <div style={{background:C.surface,borderRadius:18,padding:28,width:500,maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.2)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}>
-          <h3 style={{fontFamily:FF.display,fontSize:20,fontWeight:800,color:C.textHi,margin:0}}>Neuen Schüler anlegen</h3>
-          <button onClick={()=>setShowAdd(false)} style={{background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}><X size={20}/></button>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <Input label="Name *" value={draft.name} onChange={v=>setDraft(p=>({...p,name:v}))} placeholder="Vor- und Nachname"/>
-          <Input label="Klasse (1–13) *" value={draft.grade} onChange={v=>setDraft(p=>({...p,grade:v}))} type="number" placeholder="z.B. 7"/>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>Fächer</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {ALL_SUBJECTS.map(s=>{const on=draft.subjects.includes(s);return <button key={s} onClick={()=>setDraft(p=>({...p,subjects:on?p.subjects.filter(x=>x!==s):[...p.subjects,s]}))} style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${on?C.accent:C.border}`,background:on?C.accentTint:C.surfaceAlt,color:on?C.accent:C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{s}</button>;})}
-            </div>
-          </div>
-          <Input label="Schwerpunkt" value={draft.focus} onChange={v=>setDraft(p=>({...p,focus:v}))} placeholder="z.B. ZP10, Abi-Vorbereitung"/>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Standort</label>
-            <select value={draft.locationId} onChange={e=>setDraft(p=>({...p,locationId:e.target.value}))} style={{width:"100%",padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body}}>
-              {LOCATIONS.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:6}}>Lehrkraft zuweisen</label>
-            <select value={draft.teacherId} onChange={e=>setDraft(p=>({...p,teacherId:e.target.value}))} style={{width:"100%",padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:10,background:C.surfaceAlt,color:C.textHi,fontSize:14,fontFamily:FF.body}}>
-              <option value="">Später zuweisen</option>
-              {teachers.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-          <div style={{display:"flex",gap:10,marginTop:8}}>
-            <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:13,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbrechen</button>
-            <button onClick={addStudent} disabled={!draft.name||!draft.grade} style={{flex:1,padding:13,background:draft.name&&draft.grade?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.border,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:draft.name&&draft.grade?"pointer":"not-allowed",fontFamily:FF.body}}>Anlegen</button>
-          </div>
-        </div>
-      </div>
-    </div>}
-  </div>;
-}
-
-/* =========================================================
-   SCHÜLER DETAIL
-   ========================================================= */
-function StudentDetail({studentId,students,teachers,apts,setStudents,onBack}){
-  const s=students.find(x=>x.id===studentId); if(!s) return null;
-  const t=teachers.find(x=>x.id===s.teacherId);
-  const loc=LOCATIONS.find(l=>l.id===s.locationId);
-  const sApts=apts.filter(a=>a.studentIds?.includes(studentId));
-  const [editing,setEditing]=useState(false);
-  const [draft,setDraft]=useState({...s});
-
-  const save=()=>{setStudents(prev=>prev.map(x=>x.id===studentId?{...x,...draft}:x));setEditing(false);};
-
-  return <div style={{padding:"28px 40px 60px",maxWidth:960,margin:"0 auto"}}>
-    <button onClick={onBack} style={{background:"transparent",border:"none",color:C.textDim,display:"flex",alignItems:"center",gap:6,padding:0,cursor:"pointer",marginBottom:20,fontFamily:FF.body,fontSize:13,fontWeight:600}}>
-      <ArrowLeft size={16}/> Zurück zur Schülerliste
-    </button>
-    <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24,padding:"24px 28px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,boxShadow:"0 1px 4px rgba(26,58,107,.05)"}}>
-      <Avatar short={s.short} size={72}/>
-      <div style={{flex:1}}>
-        <h1 style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:C.textHi,margin:"0 0 8px",letterSpacing:-0.8}}>{s.name}</h1>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          <Badge color={C.primary}>Klasse {s.grade}</Badge>
-          {s.subjects.map(sub=><Badge key={sub} color={C.primaryLi}>{sub}</Badge>)}
-          <LocBadge locationId={s.locationId}/>
-          {s.focus&&<Badge color={C.accent}>{s.focus}</Badge>}
-        </div>
-      </div>
-      <button onClick={()=>setEditing(!editing)} style={{padding:"10px 18px",background:editing?C.surface:`linear-gradient(135deg,${C.primary} 0%,${C.primaryLi} 100%)`,border:editing?`1px solid ${C.border}`:"none",borderRadius:10,color:editing?C.text:"#fff",fontSize:13,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-        <Edit2 size={13}/>{editing?"Abbrechen":"Bearbeiten"}
-      </button>
-    </div>
-
-    {editing?<Card accent={C.accent}>
-      <div style={{paddingTop:4,display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-        <Input label="Name" value={draft.name} onChange={v=>setDraft(p=>({...p,name:v}))}/>
-        <Input label="Klasse" value={String(draft.grade)} onChange={v=>setDraft(p=>({...p,grade:parseInt(v)||1}))} type="number"/>
-        <Input label="Schwerpunkt" value={draft.focus||""} onChange={v=>setDraft(p=>({...p,focus:v}))}/>
-        <div/>
-        <div style={{gridColumn:"1/-1"}}>
-          <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>Fächer</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {ALL_SUBJECTS.map(sub=>{const on=draft.subjects.includes(sub);return <button key={sub} onClick={()=>setDraft(p=>({...p,subjects:on?p.subjects.filter(x=>x!==sub):[...p.subjects,sub]}))} style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${on?C.accent:C.border}`,background:on?C.accentTint:C.surfaceAlt,color:on?C.accent:C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{sub}</button>;})}
-          </div>
-        </div>
-        <div style={{gridColumn:"1/-1"}}>
-          <button onClick={save} style={{width:"100%",padding:13,background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            <Check size={15}/> Änderungen speichern
-          </button>
-        </div>
-      </div>
-    </Card>:<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-      <Card>
-        <SecTitle>Lehrkraft</SecTitle>
-        {t?<div style={{display:"flex",alignItems:"center",gap:12}}>
-          <Avatar short={t.short} color={t.color} size={44}/>
-          <div><div style={{fontWeight:700,fontSize:15,color:C.textHi}}>{t.name}</div><div style={{fontSize:12,color:C.textDim,marginTop:2}}>{t.subjects?.join(" · ")}</div></div>
-        </div>:<span style={{fontSize:13,color:C.warn,fontWeight:700}}>Keine Zuweisung</span>}
-      </Card>
-      <Card>
-        <SecTitle>Standort & Info</SecTitle>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-          <div style={{width:10,height:10,borderRadius:5,background:LOCATIONS.find(l=>l.id===s.locationId)?.color}}/>
-          <span style={{fontWeight:700,fontSize:14,color:C.textHi}}>{LOCATIONS.find(l=>l.id===s.locationId)?.name}</span>
-        </div>
-        <div style={{fontSize:12,color:C.textDim}}>Dabei seit {s.since}</div>
-        {s.focus&&<div style={{marginTop:8}}><Badge color={C.accent}>{s.focus}</Badge></div>}
-      </Card>
-      {s.notes&&<Card style={{gridColumn:"1/-1"}}>
-        <SecTitle>Notizen</SecTitle>
-        <p style={{fontSize:13,color:C.text,lineHeight:1.6,margin:0}}>{s.notes}</p>
-      </Card>}
-      <div style={{gridColumn:"1/-1"}}>
-        <Card>
-          <SecTitle>Termine ({sApts.length})</SecTitle>
-          {sApts.length===0?<div style={{padding:"20px 0",textAlign:"center",color:C.textVeryDim,fontSize:13}}>Noch keine Termine erfasst.</div>:
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            {sApts.slice(0,8).map(a=>{
-              const sc={completed:C.success,"checked-in":C.accent,scheduled:C.textDim};
-              return <div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.surfaceAlt,borderRadius:8}}>
-                <div style={{width:8,height:8,borderRadius:4,background:sc[a.status]||C.textDim,flexShrink:0}}/>
-                <span style={{fontFamily:FF.display,fontWeight:700,fontSize:12,color:C.textHi,minWidth:40}}>{a.time}</span>
-                <span style={{fontSize:11,color:C.textDim,flex:1}}>{LOCATIONS.find(l=>l.id===a.locationId)?.short} · {a.room}</span>
-                {a.completedDur&&<span style={{fontSize:11,fontWeight:700,color:C.success}}>{a.completedDur}m</span>}
-              </div>;
-            })}
-          </div>}
-        </Card>
-      </div>
-    </div>}
-  </div>;
-}
-
-/* =========================================================
-   LEHRKRÄFTE
-   ========================================================= */
-function Lehrkraefte({teachers,setTeachers,students,apts,setView}){
-  const [showAdd,setShowAdd]=useState(false);
-  const [draft,setDraft]=useState({name:"",email:"",rate:"",subjects:[],color:TEACHER_COLORS[0]});
-
-  const add=()=>{
-    const id="t_"+Date.now();
-    setTeachers(prev=>[...prev,{id,short:initials(draft.name),role:"teacher",...draft,rate:parseFloat(draft.rate)||22}]);
-    setShowAdd(false);
-    setDraft({name:"",email:"",rate:"",subjects:[],color:TEACHER_COLORS[0]});
-  };
-
-  return <div style={{padding:"32px 40px 60px"}}>
-    <div style={{marginBottom:24}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Admin · Lehrkräfte</div>
-      <h1 style={{fontFamily:FF.display,fontSize:32,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>{teachers.length} Lehrkräfte</h1>
-    </div>
-    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:20}}>
-      <button onClick={()=>setShowAdd(true)} style={{padding:"12px 20px",background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-        <UserPlus size={14}/> Neue Lehrkraft einladen
-      </button>
-    </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
-      {teachers.map(t=>{
-        const myS=students.filter(s=>s.teacherId===t.id);
-        const openH=apts.filter(a=>a.teacherId===t.id&&a.status==="completed"&&!a.billed).reduce((s,a)=>s+(a.completedDur||60)/60,0);
-        const locs=[...new Set(myS.map(s=>s.locationId))].map(id=>LOCATIONS.find(l=>l.id===id)).filter(Boolean);
-        return <div key={t.id} onClick={()=>setView({type:"teacher",id:t.id})} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden",cursor:"pointer",transition:"all .2s",boxShadow:"0 1px 4px rgba(26,58,107,.05)"}}
-          onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 24px rgba(26,58,107,.12)";e.currentTarget.style.borderColor=t.color;}}
-          onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(26,58,107,.05)";e.currentTarget.style.borderColor=C.border;}}>
-          <div style={{height:4,background:t.color}}/>
-          <div style={{padding:20}}>
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-              <Avatar short={t.short} color={t.color} size={52}/>
-              <div>
-                <div style={{fontFamily:FF.display,fontWeight:800,fontSize:16,color:C.textHi}}>{t.name}</div>
-                <div style={{fontSize:12,color:C.textDim,marginTop:2}}>{t.email}</div>
-                <div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{locs.map(l=><LocBadge key={l.id} locationId={l.id}/>)}</div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>{t.subjects.map(s=><Badge key={s} color={C.primaryLi}>{s}</Badge>)}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,paddingTop:12,borderTop:`1px solid ${C.border}`}}>
-              {[{label:"SCHÜLER",value:myS.length,color:C.primary},{label:"STD OFFEN",value:openH.toFixed(1)+"h",color:C.accent},{label:"PRO STD",value:t.rate+"€",color:C.success}].map(stat=><div key={stat.label} style={{textAlign:"center"}}>
-                <div style={{fontFamily:FF.display,fontSize:18,fontWeight:800,color:stat.color}}>{stat.value}</div>
-                <div style={{fontSize:9,fontWeight:800,color:C.textVeryDim,letterSpacing:1,marginTop:3}}>{stat.label}</div>
-              </div>)}
-            </div>
-          </div>
-        </div>;
-      })}
-    </div>
-
-    {/* Add Teacher Modal */}
-    {showAdd&&<div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(3px)"}}>
-      <div style={{background:C.surface,borderRadius:18,padding:28,width:480,maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.2)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}>
-          <h3 style={{fontFamily:FF.display,fontSize:20,fontWeight:800,color:C.textHi,margin:0}}>Neue Lehrkraft</h3>
-          <button onClick={()=>setShowAdd(false)} style={{background:"transparent",border:"none",cursor:"pointer",color:C.textDim}}><X size={20}/></button>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <Input label="Name *" value={draft.name} onChange={v=>setDraft(p=>({...p,name:v}))} placeholder="Vor- und Nachname"/>
-          <Input label="E-Mail" value={draft.email} onChange={v=>setDraft(p=>({...p,email:v}))} type="email" placeholder="name@lernwelt.de"/>
-          <Input label="Stundensatz (€)" value={draft.rate} onChange={v=>setDraft(p=>({...p,rate:v}))} type="number" placeholder="z.B. 24"/>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>Fächer</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {ALL_SUBJECTS.map(s=>{const on=draft.subjects.includes(s);return <button key={s} onClick={()=>setDraft(p=>({...p,subjects:on?p.subjects.filter(x=>x!==s):[...p.subjects,s]}))} style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${on?C.accent:C.border}`,background:on?C.accentTint:C.surfaceAlt,color:on?C.accent:C.textDim,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>{s}</button>;})}
-            </div>
-          </div>
-          <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.textDim,display:"block",marginBottom:8}}>Farbe</label>
-            <div style={{display:"flex",gap:8}}>
-              {TEACHER_COLORS.map(c=><button key={c} onClick={()=>setDraft(p=>({...p,color:c}))} style={{width:32,height:32,borderRadius:"50%",background:c,border:draft.color===c?"3px solid #fff":"3px solid transparent",outline:draft.color===c?`2px solid ${c}`:"none",cursor:"pointer"}}/>)}
-            </div>
-          </div>
-          {draft.name&&<div style={{padding:14,background:C.surfaceAlt,borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
-            <Avatar short={initials(draft.name)} color={draft.color} size={38}/>
-            <div><div style={{fontWeight:700,fontSize:14,color:C.textHi}}>{draft.name}</div><div style={{fontSize:11,color:C.textDim}}>{draft.subjects.join(" · ")||"Keine Fächer"} · {draft.rate||22}€/h</div></div>
-          </div>}
-          <div style={{display:"flex",gap:10,marginTop:4}}>
-            <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:13,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbrechen</button>
-            <button onClick={add} disabled={!draft.name} style={{flex:1,padding:13,background:draft.name?`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`:C.border,border:"none",borderRadius:10,color:"#fff",fontSize:13,fontWeight:700,cursor:draft.name?"pointer":"not-allowed",fontFamily:FF.body,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-              <UserPlus size={13}/> Einladen
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>}
-  </div>;
-}
-
-/* =========================================================
-   LEHRKRAFT DETAIL
-   ========================================================= */
-function TeacherDetail({teacherId,teachers,students,apts,onBack}){
-  const t=teachers.find(x=>x.id===teacherId); if(!t) return null;
-  const myS=students.filter(s=>s.teacherId===t.id);
-  const myApts=apts.filter(a=>a.teacherId===t.id);
-  const openApts=myApts.filter(a=>a.status==="completed"&&!a.billed);
-  const openHrs=openApts.reduce((s,a)=>s+(a.completedDur||60)/60,0);
-  const locs=[...new Set(myS.map(s=>s.locationId))].map(id=>LOCATIONS.find(l=>l.id===id)).filter(Boolean);
-
-  return <div style={{padding:"28px 40px 60px",maxWidth:800}}>
-    <button onClick={onBack} style={{background:"transparent",border:"none",color:C.textDim,display:"flex",alignItems:"center",gap:6,padding:0,cursor:"pointer",marginBottom:20,fontFamily:FF.body,fontSize:13,fontWeight:600}}>
-      <ArrowLeft size={16}/> Zurück
-    </button>
-    <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24}}>
-      <Avatar short={t.short} color={t.color} size={64}/>
-      <div>
-        <h1 style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:C.textHi,margin:"0 0 6px",letterSpacing:-0.8}}>{t.name}</h1>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {t.subjects.map(s=><Badge key={s} color={C.primaryLi}>{s}</Badge>)}
-          {locs.map(l=><LocBadge key={l.id} locationId={l.id}/>)}
-        </div>
-      </div>
-    </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:20}}>
-      {[{label:"Schüler",value:myS.length,color:C.primary},{label:"Offene Stunden",value:openHrs.toFixed(1)+"h",color:C.accent},{label:"Stundensatz",value:t.rate+"€",color:C.success}].map(s=><Card key={s.label}>
-        <div style={{fontFamily:FF.display,fontSize:28,fontWeight:800,color:s.color,letterSpacing:-1}}>{s.value}</div>
-        <div style={{fontSize:12,color:C.textDim,marginTop:6,fontWeight:600}}>{s.label}</div>
-      </Card>)}
-    </div>
-    <Card>
-      <SecTitle>Meine Schüler ({myS.length})</SecTitle>
-      {myS.map(s=><div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.surfaceAlt,borderRadius:8,marginBottom:6}}>
-        <Avatar short={s.short} size={30}/>
-        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:C.textHi}}>{s.name}</div><div style={{fontSize:10,color:C.textDim}}>Kl. {s.grade} · {s.subjects.join(", ")}</div></div>
-        <LocBadge locationId={s.locationId}/>
-      </div>)}
-    </Card>
-  </div>;
-}
-
-/* =========================================================
-   ABRECHNUNG
-   ========================================================= */
-function Abrechnung({teachers,students,apts,setApts}){
-  const [pinStep,setPinStep]=useState(null);
-  const [pin,setPin]=useState("");
-  const [pinErr,setPinErr]=useState(false);
-  const [billed,setBilled]=useState([]);
-
-  const summaries=teachers.map(t=>{
-    const open=apts.filter(a=>a.teacherId===t.id&&a.status==="completed"&&!a.billed&&!billed.includes(t.id));
-    const hrs=open.reduce((s,a)=>s+(a.completedDur||60)/60,0);
-    return {teacher:t,openCount:open.length,hrs,cost:hrs*t.rate};
+/* ADMIN: BILLING — the new core admin view */
+function AdminBilling({ store, onTeacherClick }) {
+  const nowD = new Date();
+  const curMonthFull = nowD.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const recentMonths = [2, 1, 0].map(back => new Date(nowD.getFullYear(), nowD.getMonth() - back, 1).toLocaleDateString("de-DE", { month: "long" }));
+  const curMonthName = recentMonths[2];
+  const teacherSummaries = store.teachers.map(t => {
+    const open = store.openHoursForTeacher(t.id);
+    const openHrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+    const cost = openHrs * t.rate;
+    return { teacher: t, openCount: open.length, openHrs, cost };
   });
-  const totalCost=summaries.reduce((s,x)=>s+x.cost,0);
-  const totalHrs=summaries.reduce((s,x)=>s+x.hrs,0);
 
-  const handlePin=d=>{
-    const next=pin+d; setPin(next);
-    if(next.length===4){
-      setTimeout(()=>{
-        if(next==="1234"){setBilled(prev=>[...prev,pinStep]);setPinStep(null);setPin("");}
-        else{setPinErr(true);setPin("");setTimeout(()=>setPinErr(false),1000);}
-      },200);
+  const totalHrs = teacherSummaries.reduce((s,x) => s + x.openHrs, 0);
+  const totalCost = teacherSummaries.reduce((s,x) => s + x.cost, 0);
+
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · LOHNERFASSUNG</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>{curMonthFull}</h1>
+      </div>
+
+      {/* Security indicator */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.surfaceLo, border: `1px solid ${C.success}30`, borderRadius: 10, marginBottom: 18, fontSize: 11, color: C.textDim }}>
+        <ShieldCheck size={13} color={C.success}/>
+        <span>PIN-geschützter Bereich · Alle Aktionen werden protokolliert</span>
+      </div>
+
+      {/* Month selector */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 22 }}>
+        {recentMonths.map(m => {
+          const isOn = m === curMonthName;
+          return (
+            <div key={m} style={{ flex: 1, padding: "10px 8px", borderRadius: 10, textAlign: "center", background: isOn ? "rgba(244,145,86,.12)" : C.surface, border: `1.5px solid ${isOn ? C.primary : C.border}`, color: isOn ? C.primary : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: .3 }}>
+              {m}
+              {isOn && <div style={{ fontSize: 9, marginTop: 2 }}>OFFEN</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Total summary card */}
+      <div style={{ padding: 20, background: "linear-gradient(135deg, rgba(244,145,86,.18) 0%, rgba(231,111,81,.06) 100%)", border: `1.5px solid ${C.primary}80`, borderRadius: 18, marginBottom: 24 }}>
+        <div style={{ fontSize: 11, color: C.primary, fontWeight: 700, letterSpacing: 1.5, marginBottom: 10 }}>OFFENE LOHNSUMME</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontFamily: FF.display, fontSize: 36, fontWeight: 700, color: C.textHi, letterSpacing: -1.5, lineHeight: 1 }}>{fmtEur(totalCost)}</span>
+        </div>
+        <div style={{ display: "flex", gap: 16, fontSize: 12, color: C.text, paddingTop: 12, borderTop: `1px solid ${C.primary}30` }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={12}/> {totalHrs.toFixed(1)} Stunden</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={12}/> {teacherSummaries.filter(x => x.openHrs > 0).length} Lehrkräfte</span>
+        </div>
+      </div>
+
+      <SectionHeader>Pro Lehrkraft</SectionHeader>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+        {teacherSummaries.map(({ teacher, openCount, openHrs, cost }) => (
+          <button key={teacher.id} onClick={() => onTeacherClick(teacher.id)} style={{ width: "100%", textAlign: "left", border: `1px solid ${C.border}`, cursor: "pointer", padding: 14, background: C.surface, borderRadius: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: openHrs > 0 ? 12 : 0 }}>
+              <Avatar short={teacher.short} color={teacher.color} size={40}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.textHi }}>{teacher.name}</div>
+                <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>{teacher.subjects.join(" · ")} · {fmtEur(teacher.rate)}/h</div>
+              </div>
+              <ChevronRight size={18} color={C.textVeryDim}/>
+            </div>
+            {openHrs > 0 ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                <MiniStat label="Stunden" value={openHrs.toFixed(1)}/>
+                <MiniStat label="Termine" value={openCount}/>
+                <MiniStat label="Lohn" value={fmtEur(cost)} small/>
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: C.textVeryDim, fontStyle: "italic" }}>Keine offenen Stunden.</div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, small }) {
+  return (
+    <div style={{ background: C.surfaceLo, padding: "8px 6px", borderRadius: 8, textAlign: "center" }}>
+      <div style={{ fontFamily: FF.display, fontSize: small ? 13 : 18, fontWeight: 700, color: C.textHi, lineHeight: 1, letterSpacing: -0.5 }}>{value}</div>
+      <div style={{ fontSize: 9, color: C.textDim, fontWeight: 700, letterSpacing: .5, marginTop: 4 }}>{label.toUpperCase()}</div>
+    </div>
+  );
+}
+
+/* ADMIN: TEACHER BILLING DETAIL */
+function AdminTeacherBilling({ teacherId, store, onBack, billedBy }) {
+  const t = store.teachers.find(x => x.id === teacherId);
+  const open = store.openHoursForTeacher(teacherId);
+  const billMonth = new Date().toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const billed = store.billedHoursForTeacher(teacherId);
+  const audit = store.auditForTeacher(teacherId);
+  const openHrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+  const cost = openHrs * t.rate;
+  const [step, setStep] = useState(null); // null | "confirm" | "pin" | "processing"
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState(false);
+  const [done, setDone] = useState(false);
+  const [csvFeedback, setCsvFeedback] = useState(false);
+
+  const handleConfirm = () => { setStep("pin"); setPin(""); setPinError(false); };
+
+  const handlePinSubmit = (enteredPin) => {
+    if (enteredPin === ADMIN_PIN) {
+      setStep("processing");
+      setTimeout(() => {
+        store.markAsBilled(teacherId, billMonth, billedBy);
+        setDone(true);
+        setTimeout(() => onBack(), 1800);
+      }, 600);
+    } else {
+      setPinError(true);
+      setPin("");
+      setTimeout(() => setPinError(false), 1200);
     }
   };
 
-  return <div style={{padding:"32px 40px 60px"}}>
-    <div style={{marginBottom:24}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Admin · Lohnabrechnung</div>
-      <h1 style={{fontFamily:FF.display,fontSize:32,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>{today.toLocaleDateString("de-DE",{month:"long",year:"numeric"})}</h1>
-    </div>
+  const handleCsv = () => {
+    store.exportCSV(teacherId);
+    setCsvFeedback(true);
+    setTimeout(() => setCsvFeedback(false), 2200);
+  };
 
-    {/* Gesamt Banner */}
-    <div style={{padding:24,background:`linear-gradient(135deg,${C.primary} 0%,${C.primaryLi} 100%)`,borderRadius:16,marginBottom:24,display:"flex",gap:32,alignItems:"center"}}>
-      <div style={{width:52,height:52,borderRadius:14,background:"rgba(255,255,255,.15)",display:"grid",placeItems:"center"}}><ShieldCheck size={26} color="#fff"/></div>
-      <div>
-        <div style={{fontSize:10,color:"rgba(255,255,255,.55)",fontWeight:800,letterSpacing:1.5,marginBottom:6}}>OFFENE LOHNSUMME · PIN-GESCHÜTZT</div>
-        <div style={{fontFamily:FF.display,fontSize:36,fontWeight:800,color:"#fff",letterSpacing:-1.5}}>{fmtEur(totalCost)}</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,.65)",marginTop:4}}>{totalHrs.toFixed(1)} Stunden · {teachers.length} Lehrkräfte</div>
+  if (done) {
+    return (
+      <div style={{ padding: "60px 24px 40px", textAlign: "center" }}>
+        <div style={{ width: 80, height: 80, borderRadius: 40, background: C.success + "22", display: "grid", placeItems: "center", margin: "0 auto 22px" }}>
+          <Check size={40} color={C.success} strokeWidth={2.5}/>
+        </div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, margin: "0 0 10px", color: C.textHi, letterSpacing: -0.4 }}>Abgerechnet.</h1>
+        <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.5, margin: "0 0 6px" }}>{t.name} · {openHrs.toFixed(1)} Std · {fmtEur(cost)}</p>
+        <p style={{ fontSize: 11, color: C.textVeryDim, margin: 0 }}>Geprüft & protokolliert</p>
       </div>
-    </div>
+    );
+  }
 
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      {summaries.map(({teacher:t,openCount,hrs,cost})=>{
-        const isBilled=billed.includes(t.id);
-        return <Card key={t.id}>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <Avatar short={t.short} color={t.color} size={44}/>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:800,fontSize:15,color:C.textHi}}>{t.name}</div>
-              <div style={{fontSize:12,color:C.textDim,marginTop:2}}>{t.subjects.join(" · ")} · {t.rate} €/h</div>
+  return (
+    <div style={{ padding: "16px 20px 40px" }}>
+      <button onClick={onBack} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 18, fontFamily: FF.body }}>
+        <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
+        <Avatar short={t.short} color={t.color} size={56}/>
+        <div>
+          <div style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, color: C.textHi, letterSpacing: -0.4, lineHeight: 1.1 }}>{t.name}</div>
+          <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{t.email} · {fmtEur(t.rate)}/h</div>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div style={{ padding: 18, background: "linear-gradient(135deg, rgba(244,145,86,.18) 0%, rgba(231,111,81,.06) 100%)", border: `1.5px solid ${C.primary}80`, borderRadius: 14, marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.primary, fontWeight: 700, letterSpacing: 1.5, marginBottom: 8 }}>OFFEN · {billMonth.toUpperCase()}</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
+          <span style={{ fontFamily: FF.display, fontSize: 32, fontWeight: 700, color: C.textHi, letterSpacing: -1.2, lineHeight: 1 }}>{fmtEur(cost)}</span>
+        </div>
+        <div style={{ fontSize: 13, color: C.textDim }}>{openHrs.toFixed(1)} Stunden · {open.length} Termine</div>
+      </div>
+
+      {/* Security badge */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.surfaceLo, border: `1px solid ${C.border}`, borderRadius: 10, marginBottom: 18, fontSize: 11, color: C.textDim }}>
+        <ShieldCheck size={13} color={C.success}/>
+        <span>Abrechnung PIN-geschützt · Aktionen werden protokolliert</span>
+      </div>
+
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+        <button onClick={handleCsv} disabled={open.length === 0} style={{ flex: 1, padding: 14, background: csvFeedback ? C.success : C.surface, border: `1px solid ${csvFeedback ? C.success : C.border}`, borderRadius: 12, color: csvFeedback ? "#fff" : C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: open.length === 0 ? "not-allowed" : "pointer", opacity: open.length === 0 ? .5 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s" }}>
+          {csvFeedback ? <><Check size={14}/> CSV geladen</> : <><Download size={14}/> CSV exportieren</>}
+        </button>
+        <button onClick={handleConfirm} disabled={open.length === 0} style={{ flex: 1.4, padding: 14, background: open.length === 0 ? C.borderHi : C.success, border: "none", borderRadius: 12, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: open.length === 0 ? "not-allowed" : "pointer", opacity: open.length === 0 ? .5 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <Lock size={13}/> Abrechnen
+        </button>
+      </div>
+
+      <SectionHeader>Eingecheckte Stunden ({open.length})</SectionHeader>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+        {open.length === 0 ? (
+          <div style={{ padding: "30px 20px", textAlign: "center", color: C.textDim, background: C.surface, borderRadius: 14, fontSize: 13 }}>
+            Keine offenen Stunden.
+          </div>
+        ) : open.map(a => {
+          const names = (a.studentIds || []).map(id => store.studentById(id)?.name).filter(Boolean).join(", ") || "—";
+          const isGroup = (a.studentIds || []).length > 1;
+          return (
+            <div key={a.id} style={{ padding: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: C.surfaceLo, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  {isGroup ? <Users size={14} color={C.textDim}/> : <BookOpen size={14} color={C.textDim}/>}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isGroup ? `Gruppe: ${names}` : names}</div>
+                  <div style={{ fontSize: 11, color: C.textDim }}>{a.date} · {a.time}{a.heldMethod === "confirmed" ? " · bestätigt" : ""}</div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontFamily: FF.display, fontWeight: 700, color: C.success, fontSize: 14 }}>{a.completedDur}m</div>
+                  <div style={{ fontSize: 10, color: C.textDim, marginTop: 1 }}>{fmtEur((a.completedDur/60) * t.rate)}</div>
+                </div>
+              </div>
+              {a.notes && <div style={{ fontSize: 11, color: C.textDim, paddingLeft: 38, fontStyle: "italic", lineHeight: 1.4 }}>"{a.notes}"</div>}
             </div>
-            <div style={{textAlign:"right",marginRight:16}}>
-              <div style={{fontFamily:FF.display,fontSize:22,fontWeight:800,color:isBilled?C.textDim:C.textHi}}>{fmtEur(cost)}</div>
-              <div style={{fontSize:11,color:C.textDim,marginTop:1}}>{hrs.toFixed(1)} Std · {openCount} Termine</div>
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button style={{padding:"10px 14px",background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:12,fontWeight:700,fontFamily:FF.body,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-                <Download size={12}/> CSV
-              </button>
-              {isBilled?<div style={{padding:"10px 16px",background:C.success+"18",border:`1px solid ${C.success}40`,borderRadius:10,color:C.success,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
-                <Check size={12}/> Abgerechnet
-              </div>:<button onClick={()=>{setPinStep(t.id);setPin("");}} disabled={openCount===0} style={{padding:"10px 16px",background:openCount>0?C.success:C.border,border:"none",borderRadius:10,color:"#fff",fontSize:12,fontWeight:700,fontFamily:FF.body,cursor:openCount>0?"pointer":"not-allowed",display:"flex",alignItems:"center",gap:4,opacity:openCount===0?.5:1}}>
-                <Lock size={12}/> Abrechnen
-              </button>}
+          );
+        })}
+      </div>
+
+      {/* Audit log */}
+      {audit.length > 0 && (
+        <>
+          <SectionHeader>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <History size={12}/> Abrechnungs-Verlauf ({audit.length})
+            </span>
+          </SectionHeader>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 22 }}>
+            {audit.map(e => (
+              <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", background: C.surfaceLo, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 11 }}>
+                <CheckCircle2 size={13} color={C.success} style={{ marginTop: 1, flexShrink: 0 }}/>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: C.textHi, fontWeight: 600 }}>
+                    {e.hours.toFixed(1)} Std · {fmtEur(e.cost)}
+                  </div>
+                  <div style={{ color: C.textDim, marginTop: 2 }}>
+                    {e.formatted} · von {e.billedBy}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {billed.length > 0 && (
+        <>
+          <SectionHeader>Abgerechnete Stunden ({billed.length})</SectionHeader>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {billed.slice(0, 5).map(a => {
+              const names = (a.studentIds || []).map(id => store.studentById(id)?.name).filter(Boolean).join(", ") || "—";
+              return (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: C.surfaceLo, borderRadius: 8, fontSize: 12, opacity: .7 }}>
+                  <Check size={12} color={C.success}/>
+                  <span style={{ fontFamily: FF.display, fontWeight: 700, color: C.textHi, minWidth: 50, fontSize: 12 }}>{a.date}</span>
+                  <span style={{ flex: 1, minWidth: 0, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{names}</span>
+                  <span style={{ color: C.success, fontWeight: 700, fontSize: 11, flexShrink: 0 }}>{a.completedDur}m</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Step 1: Confirm modal */}
+      {step === "confirm" && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 18, padding: 22, width: "100%" }}>
+            <h3 style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: C.textHi }}>Abrechnen?</h3>
+            <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, margin: "0 0 22px" }}>
+              <strong style={{ color: C.textHi }}>{t.name}</strong> · {openHrs.toFixed(1)} Std · <strong style={{ color: C.textHi }}>{fmtEur(cost)}</strong><br/>
+              Im nächsten Schritt PIN bestätigen.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setStep(null)} style={{ flex: 1, padding: 14, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
+              <button onClick={() => setStep("pin")} style={{ flex: 1, padding: 14, background: C.success, border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Weiter</button>
             </div>
           </div>
-        </Card>;
-      })}
-    </div>
+        </div>
+      )}
 
-    {/* PIN Modal */}
-    {pinStep&&<div style={{position:"fixed",inset:0,background:"rgba(15,27,45,.7)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
-      <div style={{background:C.surface,borderRadius:20,padding:32,width:340,boxShadow:"0 24px 48px rgba(0,0,0,.25)"}}>
-        <div style={{textAlign:"center",marginBottom:22}}>
-          <div style={{width:56,height:56,borderRadius:16,background:`linear-gradient(135deg,${C.accent} 0%,${C.accentDk} 100%)`,display:"grid",placeItems:"center",margin:"0 auto 14px"}}><Lock size={24} color="#fff"/></div>
-          <h3 style={{fontFamily:FF.display,fontSize:20,fontWeight:800,color:C.textHi,margin:"0 0 4px"}}>PIN eingeben</h3>
-          <p style={{fontSize:12,color:C.textDim,margin:0}}>{teachers.find(t=>t.id===pinStep)?.name}</p>
+      {/* Step 2: PIN modal */}
+      {step === "pin" && (
+        <PinModal
+          title="Abrechnung bestätigen"
+          subtitle={`${t.name} · ${fmtEur(cost)}`}
+          pin={pin}
+          setPin={setPin}
+          error={pinError}
+          onSubmit={handlePinSubmit}
+          onCancel={() => setStep(null)}
+        />
+      )}
+
+      {step === "processing" && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ width: 50, height: 50, border: `3px solid ${C.border}`, borderTopColor: C.primary, borderRadius: "50%", margin: "0 auto 16px", animation: "spin 1s linear infinite" }}/>
+            <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>Wird abgerechnet…</div>
+          </div>
         </div>
-        <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:6}}>
-          {[0,1,2,3].map(i=><div key={i} style={{width:14,height:14,borderRadius:"50%",background:i<pin.length?(pinErr?C.danger:C.accent):"transparent",border:`2px solid ${pinErr?C.danger:(i<pin.length?C.accent:C.border)}`,transition:"all .15s"}}/>)}
+      )}
+    </div>
+  );
+}
+
+/* ADMIN: PIN MODAL — reusable for sensitive actions */
+function PinModal({ title, subtitle, pin, setPin, error, onSubmit, onCancel }) {
+  const handleDigit = (d) => {
+    if (pin.length < 4) {
+      const next = pin + d;
+      setPin(next);
+      if (next.length === 4) {
+        setTimeout(() => onSubmit(next), 150);
+      }
+    }
+  };
+  const handleDelete = () => setPin(pin.slice(0, -1));
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 340 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: C.primaryGrad, display: "grid", placeItems: "center" }}>
+            <Lock size={24} color="#fff"/>
+          </div>
         </div>
-        <div style={{fontSize:11,color:pinErr?C.danger:C.textVeryDim,textAlign:"center",marginBottom:18,fontWeight:600,height:16}}>{pinErr?"Falscher PIN":"Demo-PIN: 1234"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-          {["1","2","3","4","5","6","7","8","9"].map(d=><button key={d} onClick={()=>handlePin(d)} style={{padding:"16px 0",background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:10,color:C.textHi,fontFamily:FF.display,fontSize:20,fontWeight:700,cursor:"pointer"}}>{d}</button>)}
-          <button onClick={()=>{setPinStep(null);setPin("");}} style={{padding:"16px 0",background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>Abbr.</button>
-          <button onClick={()=>handlePin("0")} style={{padding:"16px 0",background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:10,color:C.textHi,fontFamily:FF.display,fontSize:20,fontWeight:700,cursor:"pointer"}}>0</button>
-          <button onClick={()=>setPin(p=>p.slice(0,-1))} style={{padding:"16px 0",background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,color:C.textDim,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:FF.body}}>← Del</button>
+        <h3 style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, margin: "0 0 4px", color: C.textHi, textAlign: "center" }}>{title}</h3>
+        <p style={{ fontSize: 12, color: C.textDim, textAlign: "center", margin: "0 0 18px" }}>{subtitle}</p>
+
+        {/* PIN dots */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginBottom: 8 }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{
+              width: 14, height: 14, borderRadius: "50%",
+              background: i < pin.length ? (error ? C.danger : C.primary) : "transparent",
+              border: `2px solid ${error ? C.danger : (i < pin.length ? C.primary : C.borderHi)}`,
+              transition: "all .15s",
+            }}/>
+          ))}
+        </div>
+        <div style={{ height: 16, fontSize: 11, color: error ? C.danger : C.textVeryDim, textAlign: "center", marginBottom: 14, fontWeight: 600 }}>
+          {error ? "Falscher PIN" : `Demo-PIN: 1234`}
+        </div>
+
+        {/* Numpad */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          {["1","2","3","4","5","6","7","8","9"].map(d => (
+            <button key={d} onClick={() => handleDigit(d)} style={{
+              padding: "16px 0", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 12,
+              color: C.textHi, fontFamily: FF.display, fontSize: 22, fontWeight: 600, cursor: "pointer",
+            }}>{d}</button>
+          ))}
+          <button onClick={onCancel} style={{
+            padding: "16px 0", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12,
+            color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FF.body,
+          }}>Abbrechen</button>
+          <button onClick={() => handleDigit("0")} style={{
+            padding: "16px 0", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 12,
+            color: C.textHi, fontFamily: FF.display, fontSize: 22, fontWeight: 600, cursor: "pointer",
+          }}>0</button>
+          <button onClick={handleDelete} style={{
+            padding: "16px 0", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12,
+            color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FF.body,
+          }}>← Löschen</button>
         </div>
       </div>
-    </div>}
-  </div>;
+    </div>
+  );
 }
 
 /* =========================================================
-   STUNDEN
+   ADMIN SCHEDULE — weekly plan builder
    ========================================================= */
-function Stunden({apts,setApts,teachers,students,setView}){
-  const [dayOffset,setDayOffset]=useState(0);
-  const d=new Date(); d.setDate(d.getDate()+dayOffset);
-  const dateKey2=dk(d);
-  const todayApts=apts.filter(a=>a.dateKey===dateKey2);
-  const byTeacher=teachers.map(t=>({teacher:t,apts:todayApts.filter(a=>a.teacherId===t.id).sort((a,b)=>a.time.localeCompare(b.time))})).filter(x=>x.apts.length>0);
-  const done=todayApts.filter(a=>a.status==="completed").length;
-  const dateLabel=d.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long"});
+function AdminSchedule({ store }) {
+  const [viewMode, setViewMode] = useState("week"); // "day" | "week" | "month"
+  const [day, setDay] = useState(2); // selected day for day view
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, 1 = next, -1 = previous
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = this month
+  const [locId, setLocId] = useState(LOCATIONS[0].id);
+  const [editingSlot, setEditingSlot] = useState(null);
+  const [confirmCopy, setConfirmCopy] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
-  const confirm=apt=>setApts(prev=>prev.map(a=>a.id===apt.id?{...a,status:"completed",completedDur:60,checkedOutAt:"jetzt"}:a));
+  const rooms = ROOMS_BY_LOCATION[locId] || [];
 
-  return <div style={{padding:"32px 40px 60px"}}>
-    <div style={{marginBottom:24}}>
-      <div style={{fontSize:11,fontWeight:800,color:C.accent,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Admin · Stunden</div>
-      <h1 style={{fontFamily:FF.display,fontSize:32,fontWeight:800,color:C.textHi,margin:0,letterSpacing:-1}}>Stunden bestätigen</h1>
-    </div>
+  // === Date math for the navigation labels ===
+  const today = new Date(); // demo: current real date
+  const baseMonday = (() => {
+    const d = new Date(today);
+    const dow = d.getDay(); // 0=Sun..6=Sat
+    const diff = dow === 0 ? -6 : 1 - dow; // shift to Monday
+    d.setDate(d.getDate() + diff);
+    return d;
+  })();
+  const weekStart = new Date(baseMonday);
+  weekStart.setDate(weekStart.getDate() + weekOffset * 7);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 4);
+  const fmtDM = (d) => `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`;
+  const monthName = (d) => d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const monthRef = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
 
-    <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24,background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 20px"}}>
-      <button onClick={()=>setDayOffset(o=>o-1)} style={{background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:8,width:36,height:36,display:"grid",placeItems:"center",cursor:"pointer",color:C.text}}><ChevronLeft size={18}/></button>
-      <div style={{flex:1,textAlign:"center"}}>
-        <div style={{fontFamily:FF.display,fontSize:18,fontWeight:800,color:C.textHi}}>{dateLabel}{dayOffset===0?" · heute":""}</div>
-        <div style={{fontSize:12,color:C.textDim,marginTop:2}}>{done}/{todayApts.length} erfasst</div>
-      </div>
-      <button onClick={()=>setDayOffset(o=>o+1)} style={{background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:8,width:36,height:36,display:"grid",placeItems:"center",cursor:"pointer",color:C.text}}><ChevronRight size={18}/></button>
-    </div>
+  // For day view: derive a date label
+  const dayDate = new Date(weekStart);
+  dayDate.setDate(weekStart.getDate() + day);
 
-    {byTeacher.length===0?<Card><div style={{padding:"40px 20px",textAlign:"center",color:C.textDim,fontSize:14}}>Keine Stunden an diesem Tag.</div></Card>:
-    <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      {byTeacher.map(({teacher:t,apts:ta})=><Card key={t.id} accent={t.color}>
-        <div style={{paddingTop:6,display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-          <Avatar short={t.short} color={t.color} size={38}/>
-          <div><div style={{fontWeight:800,fontSize:15,color:C.textHi}}>{t.name}</div><div style={{fontSize:12,color:C.textDim}}>{ta.filter(a=>a.status==="completed").length}/{ta.length} erfasst</div></div>
+  // === Handlers ===
+  const handleCopyFromPrev = () => {
+    const fromDay = day === 0 ? 4 : day - 1;
+    store.copyDayToDay(fromDay, day, locId);
+    setConfirmCopy(false);
+  };
+  const handleClear = () => {
+    store.clearDay(day, locId);
+    setConfirmClear(false);
+  };
+
+  return (
+    <div style={{ padding: "20px 16px 40px" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 14, padding: "0 4px" }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · PLAN</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>
+          {viewMode === "day" && WEEKDAYS_LONG[day]}
+          {viewMode === "week" && `Woche ${fmtDM(weekStart).slice(0,6)}–${fmtDM(weekEnd)}`}
+          {viewMode === "month" && monthName(monthRef)}
+        </h1>
+        <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+          <ShieldCheck size={11} style={{ color: C.primary }}/>
+          <span>Standard-Wochenplan · Änderungen gelten für alle Wochen</span>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {ta.map(a=>{
-            const loc=LOCATIONS.find(l=>l.id===a.locationId);
-            const names=a.studentIds.map(id=>students.find(s=>s.id===id)?.name).filter(Boolean);
-            const sc={completed:{color:C.success,label:"Erfasst"},"checked-in":{color:C.accent,label:"Läuft"},scheduled:{color:C.textDim,label:"Geplant"}};
-            const s=sc[a.status]||sc.scheduled;
-            const started=Date.now()>=new Date(`${a.dateKey}T${a.time}:00`).getTime();
-            return <div key={a.id} onClick={()=>setView({type:"apt",id:a.id})} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:C.surfaceAlt,borderRadius:10,cursor:"pointer",transition:"all .15s"}}
-              onMouseEnter={e=>e.currentTarget.style.background=C.primaryTint||"#EBF0FA"}
-              onMouseLeave={e=>e.currentTarget.style.background=C.surfaceAlt}>
-              <span style={{fontFamily:FF.display,fontWeight:800,fontSize:14,color:C.textHi,minWidth:44}}>{a.time}</span>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:C.textHi,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{names.join(", ")||"—"}</div>
-                <div style={{fontSize:10,color:C.textDim,marginTop:1}}>{loc?.short} · {a.room}</div>
-              </div>
-              <LocBadge locationId={a.locationId}/>
-              <span style={{fontSize:11,fontWeight:700,color:s.color,background:s.color+"18",padding:"3px 9px",borderRadius:6,flexShrink:0}}>{s.label}</span>
-              {a.status==="scheduled"&&started&&<button onClick={e=>{e.stopPropagation();confirm(a);}} style={{padding:"6px 12px",background:C.success,border:"none",borderRadius:8,color:"#fff",fontSize:11,fontWeight:700,fontFamily:FF.body,cursor:"pointer",flexShrink:0}}>Bestätigen</button>}
-            </div>;
+      </div>
+
+      {/* View-mode toggle */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 12, padding: 4, background: C.surfaceLo, borderRadius: 12, border: `1px solid ${C.border}` }}>
+        {[
+          { id: "day", label: "Tag" },
+          { id: "week", label: "Woche" },
+          { id: "month", label: "Monat" },
+        ].map(v => {
+          const isOn = viewMode === v.id;
+          return (
+            <button key={v.id} onClick={() => setViewMode(v.id)} style={{
+              flex: 1, padding: "9px 0", borderRadius: 9,
+              background: isOn ? C.primaryGrad : "transparent",
+              border: "none",
+              color: isOn ? "#fff" : C.text,
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+              fontFamily: FF.body,
+            }}>{v.label}</button>
+          );
+        })}
+      </div>
+
+      {/* Location switcher */}
+      {LOCATIONS.length > 1 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 14, padding: "0 4px" }}>
+          {LOCATIONS.map(loc => {
+            const isOn = loc.id === locId;
+            return (
+              <button key={loc.id} onClick={() => setLocId(loc.id)} style={{
+                flex: 1, padding: "10px 8px", borderRadius: 10,
+                background: isOn ? "rgba(244,145,86,.12)" : C.surface,
+                border: `1.5px solid ${isOn ? C.primary : C.border}`,
+                color: isOn ? C.primary : C.textDim,
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+                fontFamily: FF.body,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+              }}>
+                <MapPin size={11}/> {loc.short}
+              </button>
+            );
           })}
         </div>
-      </Card>)}
-    </div>}
-  </div>;
+      )}
+
+      {/* DAY VIEW */}
+      {viewMode === "day" && (
+        <DayView
+          day={day} setDay={setDay} locId={locId} store={store}
+          rooms={rooms} dayDate={dayDate}
+          setEditingSlot={setEditingSlot}
+          onCopyFromPrev={() => setConfirmCopy(true)}
+          onClearDay={() => setConfirmClear(true)}
+        />
+      )}
+
+      {/* WEEK VIEW */}
+      {viewMode === "week" && (
+        <WeekView
+          locId={locId} store={store} weekOffset={weekOffset} setWeekOffset={setWeekOffset}
+          rooms={rooms} weekStart={weekStart} weekEnd={weekEnd} fmtDM={fmtDM}
+          onSelectDay={(d) => { setDay(d); setViewMode("day"); }}
+          setEditingSlot={setEditingSlot}
+        />
+      )}
+
+      {/* MONTH VIEW */}
+      {viewMode === "month" && (
+        <MonthView
+          locId={locId} store={store} monthOffset={monthOffset} setMonthOffset={setMonthOffset}
+          monthRef={monthRef} baseMonday={baseMonday}
+          onSelectDay={(dayIdx, weekIdx) => { setWeekOffset(weekIdx); setDay(dayIdx); setViewMode("day"); }}
+        />
+      )}
+
+      {/* Slot editor */}
+      {editingSlot && (
+        <ScheduleSlotEditor
+          slot={editingSlot}
+          store={store}
+          onSave={(data) => { store.saveSlot(data); setEditingSlot(null); }}
+          onDelete={(id) => { store.removeSlot(id); setEditingSlot(null); }}
+          onCancel={() => setEditingSlot(null)}
+        />
+      )}
+
+      {/* Copy from previous confirmation */}
+      {confirmCopy && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 18, padding: 22, width: "100%" }}>
+            <h3 style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: C.textHi }}>Plan vom Vortag übernehmen?</h3>
+            <p style={{ fontSize: 12, color: C.textDim, lineHeight: 1.5, margin: "0 0 22px" }}>
+              {WEEKDAYS_LONG[day]} wird mit dem Plan von {WEEKDAYS_LONG[day === 0 ? 4 : day - 1]} überschrieben. Bestehende Einträge gehen verloren.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmCopy(false)} style={{ flex: 1, padding: 12, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
+              <button onClick={handleCopyFromPrev} style={{ flex: 1, padding: 12, background: C.primary, border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Übernehmen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear day confirmation */}
+      {confirmClear && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.danger}40`, borderRadius: 18, padding: 22, width: "100%" }}>
+            <h3 style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: C.textHi }}>{WEEKDAYS_LONG[day]} leeren?</h3>
+            <p style={{ fontSize: 12, color: C.textDim, lineHeight: 1.5, margin: "0 0 22px" }}>
+              Alle geplanten Stunden werden entfernt. Eingecheckte Stunden in der Buchhaltung bleiben.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmClear(false)} style={{ flex: 1, padding: 12, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
+              <button onClick={handleClear} style={{ flex: 1, padding: 12, background: C.danger, border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Leeren</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* =========================================================
-   MAIN APP
-   ========================================================= */
-export default function App(){
-  const [user,setUser]=useState(null);
-  const [tab,setTab]=useState("dashboard");
-  const [view,setView]=useState(null);
-  const [teachers,setTeachers]=useState(INIT_TEACHERS);
-  const [students,setStudents]=useState(INIT_STUDENTS);
-  const [apts,setApts]=useState(INIT_APTS);
+/* DayView — single day, rooms with their slots (the original logic) */
+function DayView({ day, setDay, locId, store, rooms, dayDate, setEditingSlot, onCopyFromPrev, onClearDay }) {
+  const slots = store.slotsForDateLoc(dayDate, locId);
+  const dateKey = isoDateKey(dayDate);
+  const totalSlots = slots.length;
+  const totalStudentsScheduled = slots.reduce((sum, s) => sum + s.studentIds.length, 0);
 
-  const navTab=t=>{setTab(t);setView(null);};
+  return (
+    <>
+      {/* Day tabs */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 12, padding: "0 4px" }}>
+        {WEEKDAYS.map((wd, idx) => {
+          const isOn = idx === day;
+          const slotsThisDay = store.slotsForDayLoc(idx, locId).length;
+          return (
+            <button key={wd} onClick={() => setDay(idx)} style={{
+              flex: 1, padding: "10px 0", borderRadius: 10,
+              background: isOn ? C.primaryGrad : C.surface,
+              border: `1.5px solid ${isOn ? "transparent" : C.border}`,
+              color: isOn ? "#fff" : C.text,
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+              fontFamily: FF.body, position: "relative",
+            }}>
+              {wd}
+              {slotsThisDay > 0 && (
+                <span style={{
+                  position: "absolute", top: 4, right: 6,
+                  fontSize: 9, fontWeight: 700,
+                  color: isOn ? "rgba(255,255,255,.85)" : C.primary,
+                }}>{slotsThisDay}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-  // Filter by location for loc_admin
-  const filteredStudents=user?.role==="loc_admin"?students.filter(s=>s.locationId===user.locationId):students;
-  const filteredTeachers=user?.role==="loc_admin"?teachers.filter(t=>{
-    const myStudents=students.filter(s=>s.locationId===user.locationId);
-    return myStudents.some(s=>s.teacherId===t.id);
-  }):teachers;
-  const filteredApts=user?.role==="loc_admin"?apts.filter(a=>a.locationId===user.locationId):apts;
+      {/* Stats line */}
+      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 14, padding: "0 4px" }}>
+        {totalSlots} Stunden geplant · {totalStudentsScheduled} Schüler-Plätze
+      </div>
 
-  // Extract location from plan_xxx tab
-  const planLocId=tab.startsWith("plan_")?tab.replace("plan_",""):null;
+      {/* Quick actions */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 18, padding: "0 4px" }}>
+        <button onClick={onCopyFromPrev} style={{
+          flex: 1, padding: "10px 8px", borderRadius: 10,
+          background: C.surfaceLo, border: `1px solid ${C.border}`,
+          color: C.text, fontSize: 11, fontWeight: 600, cursor: "pointer",
+          fontFamily: FF.body, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        }}>
+          <Calendar size={12}/> Vom Vortag kopieren
+        </button>
+        {totalSlots > 0 && (
+          <button onClick={onClearDay} style={{
+            padding: "10px 14px", borderRadius: 10,
+            background: "transparent", border: `1px solid ${C.danger}40`,
+            color: C.danger, fontSize: 11, fontWeight: 600, cursor: "pointer",
+            fontFamily: FF.body, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+          }}>
+            <Trash2 size={11}/> Tag leeren
+          </button>
+        )}
+      </div>
 
-  const renderView=()=>{
-    if(view?.type==="apt") return <AptDetail aptId={view.id} apts={apts} teachers={teachers} students={students} setApts={setApts} onBack={()=>setView(null)}/>;
-    if(view?.type==="student") return <StudentDetail studentId={view.id} students={students} teachers={teachers} apts={apts} setStudents={setStudents} onBack={()=>setView(null)}/>;
-    if(view?.type==="teacher") return <TeacherDetail teacherId={view.id} teachers={teachers} students={students} apts={apts} onBack={()=>setView(null)}/>;
-    return null;
+      {/* Rooms with their planned slots */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {rooms.map(room => {
+          const roomSlots = slots
+            .filter(s => s.roomId === room.id)
+            .sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
+          const suggestNextTime = () => {
+            for (const t of TIME_SLOTS) {
+              if (!roomSlots.some(s => s.time === t)) return t;
+            }
+            return TIME_SLOTS[0];
+          };
+          return (
+            <div key={room.id} style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 14,
+              overflow: "hidden",
+            }}>
+              <div style={{
+                padding: "12px 14px",
+                background: C.surfaceLo,
+                borderBottom: `1px solid ${C.border}`,
+                display: "flex", alignItems: "center", gap: 10,
+              }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: C.primary + "22", display: "grid", placeItems: "center", color: C.primary, fontWeight: 700, fontSize: 12, fontFamily: FF.display }}>
+                  {room.name.replace("Raum ", "")}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: C.textHi, lineHeight: 1.1 }}>{room.name}</div>
+                  <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>
+                    {roomSlots.length === 0 ? "Keine Stunden geplant" : `${roomSlots.length} Stunde${roomSlots.length === 1 ? "" : "n"} geplant`}
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                {roomSlots.map(s => (
+                  <SlotChip key={s.id} slot={s} store={store} onTap={() => setEditingSlot(s)}/>
+                ))}
+                <button
+                  onClick={() => setEditingSlot({ day, date: dateKey, time: suggestNextTime(), locationId: locId, roomId: room.id, teacherId: null, studentIds: [], type: "einzel", notes: "" })}
+                  style={{
+                    width: "100%", padding: "10px 12px",
+                    background: "transparent", border: `1.5px dashed ${C.border}`,
+                    borderRadius: 10, color: C.textDim,
+                    fontSize: 12, fontWeight: 600, fontFamily: FF.body, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  }}
+                >
+                  <Plus size={13}/> Stunde hinzufügen
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* WeekView — overview of all 5 weekdays with their slot counts; tap a day to drill in */
+function WeekView({ locId, store, weekOffset, setWeekOffset, rooms, weekStart, weekEnd, fmtDM, onSelectDay, setEditingSlot }) {
+  const weekDates = WEEKDAYS.map((_, idx) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + idx); return d; });
+  const totalSlotsWeek = weekDates.reduce((sum, d) => sum + store.slotsForDateLoc(d, locId).length, 0);
+  const totalStudentsWeek = weekDates.reduce((sum, d) =>
+    sum + store.slotsForDateLoc(d, locId).reduce((s2, slot) => s2 + slot.studentIds.length, 0), 0);
+
+  return (
+    <>
+      {/* Week navigation */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "0 4px" }}>
+        <button onClick={() => setWeekOffset(weekOffset - 1)} style={{
+          width: 36, height: 36, borderRadius: 10, background: C.surface,
+          border: `1px solid ${C.border}`, color: C.text, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}><ChevronLeft size={16}/></button>
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.textHi, fontFamily: FF.body }}>
+            {weekOffset === 0 ? "Diese Woche" : weekOffset === 1 ? "Nächste Woche" : weekOffset === -1 ? "Letzte Woche" : `${weekOffset > 0 ? "+" : ""}${weekOffset} Wochen`}
+          </div>
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>
+            {fmtDM(weekStart)} – {fmtDM(weekEnd)}
+          </div>
+        </div>
+        <button onClick={() => setWeekOffset(weekOffset + 1)} style={{
+          width: 36, height: 36, borderRadius: 10, background: C.surface,
+          border: `1px solid ${C.border}`, color: C.text, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}><ChevronRight size={16}/></button>
+      </div>
+
+      {/* Week stats */}
+      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 14, padding: "0 4px" }}>
+        {totalSlotsWeek} Stunden · {totalStudentsWeek} Schüler-Plätze in dieser Woche
+      </div>
+
+      {/* Day cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {WEEKDAYS_LONG.map((dayName, idx) => {
+          const date = new Date(weekStart);
+          date.setDate(weekStart.getDate() + idx);
+          const slots = store.slotsForDateLoc(date, locId).sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
+          return (
+            <button
+              key={idx}
+              onClick={() => onSelectDay(idx)}
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 14,
+                padding: 0, overflow: "hidden",
+                cursor: "pointer", textAlign: "left",
+                fontFamily: FF.body,
+              }}
+            >
+              <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 40, textAlign: "center" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.primary, letterSpacing: 1 }}>{WEEKDAYS[idx]}</div>
+                  <div style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, color: C.textHi, lineHeight: 1, marginTop: 2 }}>{String(date.getDate()).padStart(2,"0")}</div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.textHi }}>{dayName}</div>
+                  <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>
+                    {slots.length === 0 ? "Keine Stunden geplant" :
+                      `${slots.length} Stunde${slots.length === 1 ? "" : "n"} · ${slots.reduce((s, sl) => s + sl.studentIds.length, 0)} Schüler`}
+                  </div>
+                  {slots.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                      {slots.map(s => {
+                        const t = store.teachers.find(x => x.id === s.teacherId);
+                        const room = ROOMS_BY_LOCATION[locId]?.find(r => r.id === s.roomId);
+                        const names = s.studentIds
+                          .map(sid => store.students.find(x => x.id === sid)?.name)
+                          .filter(Boolean);
+                        return (
+                          <div key={s.id} style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            background: C.bg, border: `1px solid ${C.border}`,
+                            borderRadius: 8, padding: "6px 8px",
+                          }}>
+                            <div style={{ fontFamily: FF.display, fontSize: 12, fontWeight: 700, color: C.textHi, width: 38, flexShrink: 0 }}>{s.time}</div>
+                            <div style={{ width: 18, height: 18, borderRadius: 5, background: t?.color || C.surfaceLo, color: "#fff", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center", flexShrink: 0 }}>{t?.short || "?"}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 11, color: C.textHi, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {names.length ? names.join(", ") : "— keine Schüler —"}
+                              </div>
+                              <div style={{ fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {t?.name || "Kein Lehrer"} · {room?.name || "—"} · {s.type === "gruppe" ? "Gruppe" : "Einzel"}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <ChevronRight size={16} style={{ color: C.textDim, flexShrink: 0 }}/>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* MonthView — calendar grid; tap a weekday cell to jump to that day */
+function MonthView({ locId, store, monthOffset, setMonthOffset, monthRef, baseMonday, onSelectDay }) {
+  // Build a calendar grid for monthRef
+  const firstOfMonth = new Date(monthRef.getFullYear(), monthRef.getMonth(), 1);
+  const firstDow = firstOfMonth.getDay(); // 0=Sun..6=Sat
+  const offsetToMonday = firstDow === 0 ? 6 : firstDow - 1;
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(firstOfMonth.getDate() - offsetToMonday);
+  // 6 weeks × 7 days = 42 cells
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    return d;
+  });
+  const today = new Date();
+  const isSameDay = (a, b) => a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+
+  // Compute the weekOffset that a given cell maps to (relative to current real-week Monday)
+  const weekOffsetForCell = (cellDate) => {
+    const cellMonday = new Date(cellDate);
+    const dow = cellMonday.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    cellMonday.setDate(cellMonday.getDate() + diff);
+    const baseTs = baseMonday.getTime();
+    return Math.round((cellMonday.getTime() - baseTs) / (7 * 24 * 60 * 60 * 1000));
   };
 
-  const renderTab=()=>{
-    if(view) return renderView();
-    const t=planLocId?"plan":tab;
-    if(t==="dashboard") return <Dashboard apts={filteredApts} teachers={filteredTeachers} students={filteredStudents} slots={INIT_SLOTS} setTab={navTab} setView={setView}/>;
-    if(t==="plan")      return <Wochenplan slots={INIT_SLOTS} teachers={teachers} students={students} initialLocId={planLocId||(user?.locationId)||"heerdt"}/>;
-    if(t==="students")  return <Schueler students={filteredStudents} setStudents={setStudents} teachers={filteredTeachers} setView={setView}/>;
-    if(t==="teachers")  return <Lehrkraefte teachers={filteredTeachers} setTeachers={setTeachers} students={filteredStudents} apts={filteredApts} setView={setView}/>;
-    if(t==="billing")   return <Abrechnung teachers={filteredTeachers} students={filteredStudents} apts={filteredApts} setApts={setApts}/>;
-    if(t==="stunden")   return <Stunden apts={filteredApts} setApts={setApts} teachers={filteredTeachers} students={filteredStudents} setView={setView}/>;
-    return null;
+  return (
+    <>
+      {/* Month navigation */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "0 4px" }}>
+        <button onClick={() => setMonthOffset(monthOffset - 1)} style={{
+          width: 36, height: 36, borderRadius: 10, background: C.surface,
+          border: `1px solid ${C.border}`, color: C.text, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}><ChevronLeft size={16}/></button>
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.textHi, fontFamily: FF.body }}>
+            {monthOffset === 0 ? "Dieser Monat" : monthOffset === 1 ? "Nächster Monat" : monthOffset === -1 ? "Letzter Monat" : monthRef.toLocaleDateString("de-DE", { month: "long" })}
+          </div>
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>
+            {monthRef.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+          </div>
+        </div>
+        <button onClick={() => setMonthOffset(monthOffset + 1)} style={{
+          width: 36, height: 36, borderRadius: 10, background: C.surface,
+          border: `1px solid ${C.border}`, color: C.text, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}><ChevronRight size={16}/></button>
+      </div>
+
+      {/* Weekday header */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4, padding: "0 4px" }}>
+        {["Mo","Di","Mi","Do","Fr","Sa","So"].map(d => (
+          <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: C.textDim, letterSpacing: 1, padding: "6px 0" }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, padding: "0 4px" }}>
+        {cells.map((d, i) => {
+          const dow = d.getDay(); // 0=Sun..6=Sat
+          const isWeekend = dow === 0 || dow === 6;
+          const inMonth = d.getMonth() === monthRef.getMonth();
+          const dayIdx = dow === 0 ? -1 : dow - 1; // 0..4 = Mo..Fr, -1 = weekend
+          const slots = dayIdx >= 0 && dayIdx <= 4 ? store.slotsForDateLoc(d, locId) : [];
+          const isToday = isSameDay(d, today);
+          const clickable = !isWeekend;
+
+          return (
+            <button
+              key={i}
+              onClick={clickable ? () => onSelectDay(dayIdx, weekOffsetForCell(d)) : undefined}
+              disabled={!clickable}
+              style={{
+                aspectRatio: "1 / 1",
+                padding: 4,
+                background: isToday ? "rgba(244,145,86,.15)" : (inMonth ? C.surface : "transparent"),
+                border: `1px solid ${isToday ? C.primary : C.border}`,
+                borderRadius: 8,
+                cursor: clickable ? "pointer" : "default",
+                opacity: !inMonth ? 0.35 : (isWeekend ? 0.5 : 1),
+                display: "flex", flexDirection: "column",
+                alignItems: "flex-start", justifyContent: "space-between",
+                fontFamily: FF.body, textAlign: "left",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 700, color: isToday ? C.primary : C.text }}>
+                {d.getDate()}
+              </div>
+              {slots.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
+                  <div style={{ fontSize: 9, color: C.primary, fontWeight: 700 }}>{slots.length} Std</div>
+                  <div style={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    {slots.slice(0, 3).map(s => {
+                      const t = store.teachers.find(x => x.id === s.teacherId);
+                      return (
+                        <div key={s.id} style={{
+                          width: 5, height: 5, borderRadius: 2,
+                          background: t?.color || C.textDim,
+                        }}/>
+                      );
+                    })}
+                    {slots.length > 3 && (
+                      <div style={{ fontSize: 8, color: C.textDim, lineHeight: 1 }}>+{slots.length - 3}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ marginTop: 14, padding: "12px 14px", background: C.surfaceLo, borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, lineHeight: 1.5 }}>
+        Tippe auf einen Werktag, um zur Tagesansicht zu springen. Wochenenden sind ausgegraut, weil im Standardplan keine Stunden vorgesehen sind.
+      </div>
+    </>
+  );
+}
+
+/* SlotChip — one planned course in a room (60 min) */
+function SlotChip({ slot, store, onTap }) {
+  const t = slot.teacherId ? store.teacherById(slot.teacherId) : null;
+  const studs = slot.studentIds.map(id => store.studentById(id)).filter(Boolean);
+  const endTime = (() => {
+    const m = timeToMin(slot.time) + COURSE_DURATION;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  })();
+  return (
+    <button onClick={onTap} style={{
+      width: "100%", padding: "10px 12px",
+      background: C.surfaceLo, border: `1.5px solid ${C.primary}50`,
+      borderRadius: 10, color: C.textHi,
+      fontFamily: FF.body, cursor: "pointer",
+      display: "flex", alignItems: "center", gap: 10, textAlign: "left",
+    }}>
+      <div style={{ flexShrink: 0, minWidth: 50 }}>
+        <div style={{ fontFamily: FF.display, fontWeight: 700, color: C.primary, fontSize: 13, lineHeight: 1 }}>{slot.time}</div>
+        <div style={{ fontSize: 9, color: C.textVeryDim, marginTop: 3 }}>bis {endTime}</div>
+      </div>
+      {t && <Avatar short={t.short} color={t.color} size={26}/>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+          <span style={{ fontWeight: 700, fontSize: 12, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {t?.name || "—"}
+          </span>
+          <span style={{ padding: "1px 5px", background: slot.type === "gruppe" ? C.info + "33" : C.success + "22", color: slot.type === "gruppe" ? C.info : C.success, fontSize: 9, fontWeight: 700, borderRadius: 4, letterSpacing: .3, textTransform: "uppercase", flexShrink: 0 }}>
+            {slot.type === "gruppe" ? `Grp · ${studs.length}` : "Einzel"}
+          </span>
+        </div>
+        <div style={{ fontSize: 10, color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {studs.length > 0 ? studs.map(s => s.name.split(" ")[0]).join(", ") : "Keine Schüler"}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ScheduleSlotEditor — bottom sheet for creating/editing a slot */
+function ScheduleSlotEditor({ slot, store, onSave, onDelete, onCancel }) {
+  const isNew = !slot.id;
+  const [time, setTime] = useState(slot.time);
+  const [teacherId, setTeacherId] = useState(slot.teacherId);
+  const [studentIds, setStudentIds] = useState(slot.studentIds || []);
+  const [type, setType] = useState(slot.type || (slot.studentIds?.length === 1 ? "einzel" : "gruppe"));
+  const [recurring, setRecurring] = useState(slot.onDate ? false : true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [studentSearch, setStudentSearch] = useState("");
+
+  // Konkretes Datum für eine einmalige Stunde (vom Tag, an dem sie angelegt/bearbeitet wird)
+  const oneTimeDate = slot.onDate || slot.date || null;
+  const oneTimeLabel = oneTimeDate
+    ? new Date(oneTimeDate + "T00:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
+    : null;
+
+  // Other slots in same room — used to mark overlapping start times (still allowed, just visually noted)
+  const otherSlotsInRoom = store.scheduleSlots.filter(s =>
+    s.day === slot.day && s.locationId === slot.locationId && s.roomId === slot.roomId && s.id !== slot.id
+  );
+
+  const teacher = teacherId ? store.teacherById(teacherId) : null;
+  // Alle Schüler zur Auswahl — keine harte Fach-Filterung (blockierte sonst,
+  // sobald ein Lehrer noch keine Fächer hinterlegt hat). Die Suche bleibt.
+  const filtered = studentSearch
+    ? store.students.filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()))
+    : store.students;
+
+  const toggleStudent = (sid) => {
+    setStudentIds(prev => {
+      const next = prev.includes(sid) ? prev.filter(x => x !== sid) : [...prev, sid];
+      // Auto-set type based on count, but only if user hasn't manually picked
+      if (next.length === 1) setType("einzel");
+      else if (next.length > 1) setType("gruppe");
+      return next;
+    });
   };
 
-  if(!user) return <Login onLogin={u=>{setUser(u);setTab("dashboard");}}/>;
+  const canSave = teacherId && studentIds.length > 0 && time && (recurring || oneTimeDate);
+  const handleSave = () => {
+    if (!canSave) return;
+    onSave({ ...slot, time, teacherId, studentIds, type, onDate: recurring ? null : oneTimeDate });
+  };
 
-  return <>
-    <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:${C.bg};}button:active{opacity:.85;}input,select,textarea{font-family:${FF.body};}`}</style>
-    <div style={{display:"flex",minHeight:"100vh"}}>
-      <Sidebar tab={tab} setTab={navTab} onLogout={()=>{setUser(null);setView(null);}} view={view} user={user} slots={INIT_SLOTS}/>
-      <main style={{flex:1,overflow:"auto",background:C.bg}}>{renderTab()}</main>
+  const room = ROOMS_BY_LOCATION[slot.locationId]?.find(r => r.id === slot.roomId);
+
+  // End time display
+  const endTime = (() => {
+    if (!time) return "";
+    const m = timeToMin(time) + COURSE_DURATION;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  })();
+
+  return (
+    <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.bg, borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "92%", display: "flex", flexDirection: "column", borderTop: `1px solid ${C.border}` }}>
+        {/* Header */}
+        <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.borderHi, margin: "0 auto 14px" }}/>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 11, color: C.primary, fontWeight: 700, letterSpacing: 1 }}>
+                {WEEKDAYS_LONG[slot.day]} · {time}{endTime ? `–${endTime}` : ""} · {room?.name || "—"}
+              </div>
+              <h2 style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, margin: "4px 0 0", color: C.textHi }}>
+                {isNew ? "Stunde planen" : "Stunde bearbeiten"}
+              </h2>
+            </div>
+            <button onClick={onCancel} style={{ width: 32, height: 32, borderRadius: 8, background: C.surface, border: `1px solid ${C.border}`, color: C.text, display: "grid", placeItems: "center", cursor: "pointer" }}>
+              <X size={16}/>
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflow: "auto", padding: "16px 20px" }}>
+          {/* Wiederholung — wöchentlich vs. einmalig */}
+          <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Wiederholung</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+            <button onClick={() => setRecurring(true)} style={{
+              padding: "12px 10px", borderRadius: 10,
+              background: recurring ? "rgba(244,145,86,.12)" : C.surface,
+              border: `1.5px solid ${recurring ? C.primary : C.border}`,
+              color: recurring ? C.primary : C.text, cursor: "pointer",
+              fontFamily: FF.body, fontSize: 12, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}>
+              <Repeat size={13}/> Jede Woche
+            </button>
+            <button onClick={() => oneTimeDate && setRecurring(false)} disabled={!oneTimeDate} style={{
+              padding: "12px 10px", borderRadius: 10,
+              background: !recurring ? "rgba(244,145,86,.12)" : C.surface,
+              border: `1.5px solid ${!recurring ? C.primary : C.border}`,
+              color: !oneTimeDate ? C.textVeryDim : (!recurring ? C.primary : C.text),
+              cursor: oneTimeDate ? "pointer" : "not-allowed", opacity: oneTimeDate ? 1 : .5,
+              fontFamily: FF.body, fontSize: 12, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}>
+              <Calendar size={13}/> Nur einmal
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: recurring ? C.textDim : C.primary, marginBottom: 20, lineHeight: 1.4 }}>
+            {recurring
+              ? `Wiederholt sich jede Woche am ${WEEKDAYS_LONG[slot.day]}.`
+              : (oneTimeLabel ? `Nur am ${oneTimeLabel}.` : "Für eine einmalige Stunde im Plan ein Datum wählen.")}
+          </div>
+
+          {/* Time picker — overlaps allowed */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
+              Startzeit
+            </div>
+            <div style={{ fontSize: 10, color: C.textVeryDim }}>
+              60 Min · endet {endTime}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5, marginBottom: 18 }}>
+            {TIME_SLOTS.map(t => {
+              const isOn = t === time;
+              const overlapping = otherSlotsInRoom.some(s => slotsConflict(s.time, t));
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTime(t)}
+                  style={{
+                    padding: "10px 4px", borderRadius: 8,
+                    background: isOn ? C.primaryGrad : C.surface,
+                    border: `1.5px solid ${isOn ? "transparent" : (overlapping ? C.info + "60" : C.borderHi)}`,
+                    color: isOn ? "#fff" : C.text,
+                    fontSize: 12, fontWeight: 700, fontFamily: FF.display,
+                    cursor: "pointer",
+                    letterSpacing: -.3,
+                    position: "relative",
+                  }}>
+                  {t}
+                  {overlapping && !isOn && (
+                    <div style={{ position: "absolute", top: 3, right: 4, width: 5, height: 5, borderRadius: "50%", background: C.info }}/>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Teacher selection */}
+          <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Lehrkraft</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 18 }}>
+            {store.teachers.map(t => {
+              const isOn = t.id === teacherId;
+              return (
+                <button key={t.id} onClick={() => setTeacherId(t.id)} style={{
+                  padding: 10, borderRadius: 10,
+                  background: isOn ? "rgba(244,145,86,.12)" : C.surface,
+                  border: `1.5px solid ${isOn ? C.primary : C.border}`,
+                  cursor: "pointer", textAlign: "left", fontFamily: FF.body,
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <Avatar short={t.short} color={t.color} size={26}/>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
+                    <div style={{ fontSize: 9, color: C.textDim, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.subjects.slice(0,2).join(" · ")}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Type toggle (auto-set, but overridable) */}
+          {studentIds.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Stundenart</div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+                <button onClick={() => setType("einzel")} disabled={studentIds.length > 1} style={{
+                  flex: 1, padding: 10, borderRadius: 10,
+                  background: type === "einzel" ? C.success + "22" : C.surface,
+                  border: `1.5px solid ${type === "einzel" ? C.success : C.border}`,
+                  color: type === "einzel" ? C.success : C.textDim,
+                  fontSize: 12, fontWeight: 700, cursor: studentIds.length > 1 ? "not-allowed" : "pointer",
+                  fontFamily: FF.body, opacity: studentIds.length > 1 ? .4 : 1,
+                }}>
+                  Einzel
+                </button>
+                <button onClick={() => setType("gruppe")} style={{
+                  flex: 1, padding: 10, borderRadius: 10,
+                  background: type === "gruppe" ? C.info + "22" : C.surface,
+                  border: `1.5px solid ${type === "gruppe" ? C.info : C.border}`,
+                  color: type === "gruppe" ? C.info : C.textDim,
+                  fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: FF.body,
+                }}>
+                  Gruppe ({studentIds.length})
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Student selection */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: C.textDim, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
+              Schüler ({studentIds.length})
+            </div>
+            {teacher && teacher.subjects?.length > 0 && (
+              <div style={{ fontSize: 10, color: C.textVeryDim }}>
+                Fächer: {teacher.subjects.join(", ")}
+              </div>
+            )}
+          </div>
+
+          {/* Search */}
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <Search size={14} color={C.textVeryDim} style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)" }}/>
+            <input
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Schüler suchen…"
+              style={{
+                width: "100%", padding: "9px 12px 9px 34px",
+                background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
+                color: C.textHi, fontSize: 12, fontFamily: FF.body,
+                outline: "none", boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: "20px 14px", textAlign: "center", color: C.textVeryDim, fontSize: 12, background: C.surface, borderRadius: 10 }}>
+                Keine Schüler gefunden.
+              </div>
+            )}
+            {filtered.map(s => {
+              const isOn = studentIds.includes(s.id);
+              return (
+                <button key={s.id} onClick={() => toggleStudent(s.id)} style={{
+                  padding: 10, borderRadius: 10,
+                  background: isOn ? "rgba(244,145,86,.12)" : C.surface,
+                  border: `1.5px solid ${isOn ? C.primary : C.border}`,
+                  cursor: "pointer", textAlign: "left", fontFamily: FF.body,
+                  display: "flex", alignItems: "center", gap: 10,
+                }}>
+                  <Avatar short={s.short} size={28}/>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                    <div style={{ fontSize: 10, color: C.textDim, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Kl. {s.grade} · {s.subjects.join(", ")}</div>
+                  </div>
+                  {isOn && <Check size={16} color={C.primary}/>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sticky footer with actions */}
+        <div style={{ padding: 16, borderTop: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 8 }}>
+          {!isNew && (
+            <button onClick={() => setConfirmDelete(true)} style={{
+              padding: "12px 14px", borderRadius: 10,
+              background: "transparent", border: `1px solid ${C.danger}80`,
+              color: C.danger, fontSize: 13, fontWeight: 700, fontFamily: FF.body,
+              cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0,
+            }}>
+              <Trash2 size={14}/>
+            </button>
+          )}
+          <button onClick={handleSave} disabled={!canSave} style={{
+            flex: 1, padding: 12, borderRadius: 10,
+            background: canSave ? C.primaryGrad : C.borderHi, border: "none",
+            color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body,
+            cursor: canSave ? "pointer" : "not-allowed", opacity: canSave ? 1 : .5,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          }}>
+            <Check size={15}/> {isNew ? "Stunde anlegen" : "Speichern"}
+          </button>
+        </div>
+
+        {/* Delete confirm */}
+        {confirmDelete && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.85)", zIndex: 210, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.danger}40`, borderRadius: 18, padding: 22, width: "100%" }}>
+              <h3 style={{ fontFamily: FF.display, fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: C.textHi, textAlign: "center" }}>Stunde entfernen?</h3>
+              <p style={{ fontSize: 12, color: C.textDim, lineHeight: 1.5, margin: "0 0 22px", textAlign: "center" }}>
+                {WEEKDAYS_LONG[slot.day]} · {slot.time} · {room?.name}
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 12, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
+                <button onClick={() => onDelete(slot.id)} style={{ flex: 1, padding: 12, background: C.danger, border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Entfernen</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  </>;
+  );
+}
+
+function AdminToday({ store }) {
+  const [dayOffset, setDayOffset] = useState(0);
+  const [confirmAll, setConfirmAll] = useState(false);
+  const base = new Date(); base.setHours(0, 0, 0, 0);
+  const date = new Date(base); date.setDate(base.getDate() + dayOffset);
+  const all = store.lessonsForDateAll(date);
+  const byTeacher = store.teachers
+    .map(t => ({ teacher: t, apts: all.filter(a => a.teacherId === t.id) }))
+    .filter(x => x.apts.length > 0);
+  const heldCount = all.filter(a => a.status === "completed").length;
+  const openCount = all.length - heldCount;
+  const dateLabel = date.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" });
+  const isToday = dayOffset === 0;
+  const now = Date.now();
+  // Fällige, noch nicht erfasste Stunden (Startzeit vorbei) — für "Ganzen Tag buchen"
+  const eligible = all.filter(a => a.status === "scheduled" && now >= new Date(`${a.dateKey}T${a.time}:00`).getTime());
+  const goDay = (delta) => { setConfirmAll(false); setDayOffset(dayOffset + delta); };
+
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · STUNDEN</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5, color: C.textHi }}>Stunden bestätigen</h1>
+      </div>
+
+      {/* Tagesnavigation */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "8px 10px" }}>
+        <button onClick={() => goDay(-1)} style={{ background: "transparent", border: "none", cursor: "pointer", color: C.text, padding: 6, display: "flex" }}><ChevronLeft size={20}/></button>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi }}>{dateLabel}{isToday ? " · heute" : ""}</div>
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 1 }}>{heldCount} erfasst · {openCount} offen</div>
+        </div>
+        <button onClick={() => goDay(1)} style={{ background: "transparent", border: "none", cursor: "pointer", color: C.text, padding: 6, display: "flex" }}><ChevronRight size={20}/></button>
+      </div>
+
+      {/* Ganzen Tag auf einmal buchen */}
+      {eligible.length > 0 && (
+        <button
+          onClick={() => {
+            if (confirmAll) { store.confirmManyHeld(eligible); setConfirmAll(false); }
+            else { setConfirmAll(true); setTimeout(() => setConfirmAll(false), 3500); }
+          }}
+          style={{
+            width: "100%", padding: 13, marginBottom: 16, borderRadius: 12, border: "none",
+            background: confirmAll ? C.primary : C.success, color: "#fff",
+            fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}>
+          <Check size={15}/> {confirmAll ? `Sicher? ${eligible.length} Stunden buchen` : `Ganzen Tag buchen (${eligible.length})`}
+        </button>
+      )}
+
+      {byTeacher.length === 0 ? (
+        <div style={{ padding: "40px 20px", textAlign: "center", color: C.textDim, background: C.surface, borderRadius: 14, border: `1px dashed ${C.border}` }}>
+          Keine Stunden an diesem Tag.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {byTeacher.map(({ teacher, apts }) => (
+            <div key={teacher.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <Avatar short={teacher.short} color={teacher.color} size={32}/>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi }}>{teacher.name}</div>
+                  <div style={{ fontSize: 11, color: C.textDim }}>{apts.filter(a => a.status === "completed").length}/{apts.length} erfasst</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {apts.map(a => {
+                  const names = (a.students || []).map(s => s.name).join(", ") || "—";
+                  const label = a.students && a.students.length > 1 ? `Gruppe: ${names}` : names;
+                  const held = a.status === "completed";
+                  const running = a.status === "checked-in";
+                  const startTs = new Date(`${a.dateKey}T${a.time}:00`).getTime();
+                  const started = now >= startTs;
+                  return (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: C.surfaceLo, borderRadius: 8, fontSize: 12 }}>
+                      <span style={{ fontFamily: FF.display, fontWeight: 700, color: C.textHi, minWidth: 42, fontSize: 13 }}>{a.time}</span>
+                      <span style={{ flex: 1, minWidth: 0, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {label} <span style={{ color: C.textDim }}>· {a.room}</span>
+                      </span>
+                      {held ? (
+                        <button onClick={() => store.revertLesson(a.id)} style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.textDim, fontSize: 11, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Check size={12} color={C.success}/> erfasst · zurück
+                        </button>
+                      ) : running ? (
+                        <button onClick={() => store.revertLesson(a.id)} style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.primary, fontSize: 11, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>
+                          läuft · zurück
+                        </button>
+                      ) : started ? (
+                        <button onClick={() => store.confirmHeld(a, "")} style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 6, border: "none", background: C.success, color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>
+                          Bestätigen
+                        </button>
+                      ) : (
+                        <span style={{ flexShrink: 0, fontSize: 11, color: C.textVeryDim, fontWeight: 700 }}>geplant</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminStaff({ store, onTeacherClick }) {
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · LEHRKRÄFTE</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>{store.teachers.length} Lehrer aktiv</h1>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {store.teachers.map(t => {
+          const myStudents = store.students.filter(s => s.teacherId === t.id);
+          const open = store.openHoursForTeacher(t.id);
+          const hrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+          return (
+            <button key={t.id} onClick={() => onTeacherClick(t.id)} style={{ width: "100%", textAlign: "left", padding: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <Avatar short={t.short} color={t.color} size={42}/>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: C.textHi }}>{t.name}</div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{t.subjects.join(" · ")}</div>
+                </div>
+                <ChevronRight size={18} color={C.textVeryDim}/>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                <MiniStat label="Schüler" value={myStudents.length}/>
+                <MiniStat label="Std offen" value={hrs.toFixed(1)}/>
+                <MiniStat label="Stundensatz" value={`${t.rate}€`}/>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AdminStudentCard({ s, store, unassigned, onAssign, onClick, onRemove }) {
+  const t = s.teacherId ? store.teacherById(s.teacherId) : null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 12, background: C.surface, border: `1px solid ${unassigned ? C.warn + "60" : C.border}`, borderRadius: 12 }}>
+      <button onClick={onClick} style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, textAlign: "left" }}>
+        <Avatar short={s.short} size={36}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Kl. {s.grade} · {s.subjects.join(", ")}</div>
+        </div>
+      </button>
+      {unassigned ? (
+        <button onClick={onAssign} style={{ padding: "6px 10px", borderRadius: 8, background: C.warn, color: "#0A1628", fontSize: 11, fontWeight: 700, letterSpacing: .3, border: "none", cursor: "pointer", fontFamily: FF.body }}>Zuweisen</button>
+      ) : t ? (
+        <Avatar short={t.short} color={t.color} size={26}/>
+      ) : null}
+      <button onClick={(e) => { e.stopPropagation(); onRemove(); }} aria-label="Entfernen" style={{ width: 32, height: 32, padding: 0, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, cursor: "pointer", display: "grid", placeItems: "center" }}>
+        <Trash2 size={14}/>
+      </button>
+    </div>
+  );
+}
+
+function AdminStudents({ store, onAdd, onAssignClick, onStudentClick }) {
+  const [query, setQuery] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(null); // student object
+  const q = query.trim().toLowerCase();
+  const filtered = q ? store.students.filter(s =>
+    s.name.toLowerCase().includes(q) ||
+    s.subjects.some(sub => sub.toLowerCase().includes(q)) ||
+    String(s.grade).includes(q) ||
+    (s.focus || "").toLowerCase().includes(q)
+  ) : store.students;
+
+  const unassigned = filtered.filter(s => !s.teacherId);
+  const assigned = filtered.filter(s => s.teacherId);
+
+  const handleRemove = () => {
+    if (confirmRemove) {
+      store.removeStudent(confirmRemove.id);
+      setConfirmRemove(null);
+    }
+  };
+
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · ALLE SCHÜLER</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>{store.students.length} Schüler</h1>
+      </div>
+      <button onClick={onAdd} style={{ width: "100%", marginBottom: 14, padding: 14, background: C.primaryGrad, color: "#fff", border: "none", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", boxShadow: "0 8px 18px -6px rgba(244,145,86,.4)" }}>
+        <UserPlus size={16}/> Neuen Schüler anlegen
+      </button>
+
+      {/* Search bar */}
+      <div style={{ position: "relative", marginBottom: 22 }}>
+        <Search size={15} color={C.textVeryDim} style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)" }}/>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Suchen: Name, Klasse, Fach …"
+          style={{
+            width: "100%", padding: "11px 12px 11px 36px",
+            background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
+            color: C.textHi, fontSize: 13, fontFamily: FF.body,
+            outline: "none", boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      {filtered.length === 0 && (
+        <div style={{ padding: "30px 20px", textAlign: "center", color: C.textDim, background: C.surface, borderRadius: 14, fontSize: 13 }}>
+          Keine Schüler gefunden für „{query}".
+        </div>
+      )}
+
+      {unassigned.length > 0 && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <AlertCircle size={14} color={C.warn}/>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: C.warn, letterSpacing: 1, margin: 0, textTransform: "uppercase" }}>Ohne Zuweisung ({unassigned.length})</h2>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+            {unassigned.map(s => <AdminStudentCard key={s.id} s={s} store={store} unassigned onAssign={() => onAssignClick(s.id)} onClick={() => onStudentClick(s.id)} onRemove={() => setConfirmRemove(s)}/>)}
+          </div>
+        </>
+      )}
+      {assigned.length > 0 && (
+        <>
+          <SectionHeader>Zugewiesen ({assigned.length})</SectionHeader>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {assigned.map(s => <AdminStudentCard key={s.id} s={s} store={store} onClick={() => onStudentClick(s.id)} onRemove={() => setConfirmRemove(s)}/>)}
+          </div>
+        </>
+      )}
+
+      {/* Inline remove confirmation */}
+      {confirmRemove && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.danger}40`, borderRadius: 18, padding: 22, width: "100%" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: C.danger + "22", display: "grid", placeItems: "center", margin: "0 auto 14px" }}>
+              <AlertCircle size={28} color={C.danger}/>
+            </div>
+            <h3 style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: C.textHi, textAlign: "center" }}>{confirmRemove.name} entfernen?</h3>
+            <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, margin: "0 0 22px", textAlign: "center" }}>
+              Schüler wird gelöscht. Bereits eingecheckte Stunden bleiben für die Buchhaltung erhalten.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmRemove(null)} style={{ flex: 1, padding: 14, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Abbrechen</button>
+              <button onClick={handleRemove} style={{ flex: 1, padding: 14, background: C.danger, border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Ja, entfernen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminAssign({ store, prefilledStudentId, onDone }) {
+  const unassigned = store.students.filter(s => !s.teacherId);
+  const initialStudent = prefilledStudentId ? store.studentById(prefilledStudentId) : null;
+  const [step, setStep] = useState(initialStudent ? 2 : 1);
+  const [pickedStudent, setPickedStudent] = useState(initialStudent);
+  const [pickedTeacher, setPickedTeacher] = useState(null);
+  const [done, setDone] = useState(false);
+  const confirm = () => { store.assignStudent(pickedStudent.id, pickedTeacher.id); setDone(true); };
+
+  if (done) return (
+    <div style={{ padding: "60px 24px 40px", textAlign: "center" }}>
+      <div style={{ width: 80, height: 80, borderRadius: 40, background: C.success + "22", display: "grid", placeItems: "center", margin: "0 auto 22px" }}>
+        <Check size={40} color={C.success} strokeWidth={2.5}/>
+      </div>
+      <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: "0 0 10px", color: C.textHi, letterSpacing: -0.4 }}>Erfolgreich zugewiesen.</h1>
+      <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.5, margin: "0 0 32px" }}>{pickedStudent.name} wird ab jetzt von {pickedTeacher.name} betreut.</p>
+      <button onClick={() => onDone()} style={{ padding: "14px 24px", background: C.primary, color: "#fff", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Fertig</button>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "20px 20px 40px" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · ZUWEISEN</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>
+          {step === 1 && "Schüler auswählen"}{step === 2 && "Lehrkraft wählen"}{step === 3 && "Bestätigen"}
+        </h1>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+        {[1,2,3].map(n => <div key={n} style={{ flex: 1, height: 4, borderRadius: 2, background: step >= n ? C.primary : C.border }}/>)}
+      </div>
+      {step === 1 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {unassigned.length === 0 ? (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: C.textDim, background: C.surface, borderRadius: 14 }}>
+              <Sparkles size={28} color={C.success} style={{ marginBottom: 10 }}/>
+              <div style={{ fontSize: 14, color: C.textHi, fontWeight: 600 }}>Alle Schüler zugewiesen.</div>
+            </div>
+          ) : unassigned.map(s => (
+            <button key={s.id} onClick={() => { setPickedStudent(s); setStep(2); }} style={{ width: "100%", textAlign: "left", border: `1px solid ${C.border}`, cursor: "pointer", padding: 14, background: C.surface, borderRadius: 14, display: "flex", alignItems: "center", gap: 12 }}>
+              <Avatar short={s.short} size={40}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi }}>{s.name}</div>
+                <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>Kl. {s.grade} · {s.subjects.join(", ")}</div>
+              </div>
+              <ChevronRight size={18} color={C.textVeryDim}/>
+            </button>
+          ))}
+        </div>
+      )}
+      {step === 2 && pickedStudent && (
+        <>
+          <div style={{ padding: 12, background: C.surfaceLo, borderRadius: 12, marginBottom: 16, fontSize: 13, color: C.text }}>
+            Für <strong style={{ color: C.textHi }}>{pickedStudent.name}</strong> ({pickedStudent.subjects.join(", ") || "—"}, Kl. {pickedStudent.grade})
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {store.teachers.map(t => {
+              const matches = subjectsMatch(t.subjects, pickedStudent.subjects);
+              const load = store.students.filter(s => s.teacherId === t.id).length;
+              return (
+                <button key={t.id} onClick={() => { setPickedTeacher(t); setStep(3); }} style={{ width: "100%", textAlign: "left", border: `1.5px solid ${matches ? C.success + "60" : C.border}`, cursor: "pointer", padding: 14, background: C.surface, borderRadius: 14, display: "flex", alignItems: "center", gap: 12 }}>
+                  <Avatar short={t.short} color={t.color} size={40}/>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: C.textHi }}>{t.name}</span>
+                      {matches && <span style={{ padding: "1px 6px", background: C.success + "22", color: C.success, fontSize: 9, fontWeight: 700, borderRadius: 4 }}>PASST</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>{t.subjects.join(" · ")} · {load} Schüler</div>
+                  </div>
+                  <ChevronRight size={18} color={C.textVeryDim}/>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      {step === 3 && pickedStudent && pickedTeacher && (
+        <>
+          <div style={{ padding: 18, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 18 }}>
+            <div style={{ fontSize: 12, color: C.textDim, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>NEUE ZUWEISUNG</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <Avatar short={pickedStudent.short} size={36}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi }}>{pickedStudent.name}</div>
+                <div style={{ fontSize: 11, color: C.textDim }}>Klasse {pickedStudent.grade} · {pickedStudent.subjects.join(", ") || "—"}</div>
+              </div>
+            </div>
+            <div style={{ height: 1, background: C.border, margin: "10px 0" }}/>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Avatar short={pickedTeacher.short} color={pickedTeacher.color} size={36}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.textHi }}>{pickedTeacher.name}</div>
+                <div style={{ fontSize: 11, color: C.textDim }}>{pickedTeacher.subjects.join(" · ")}</div>
+              </div>
+            </div>
+          </div>
+          <PrimaryButton onClick={confirm} icon={CheckCircle2}>Zuweisung bestätigen</PrimaryButton>
+          <button onClick={() => setStep(2)} style={{ marginTop: 12, width: "100%", padding: 12, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, color: C.text, fontSize: 14, fontFamily: FF.body, cursor: "pointer" }}>Zurück</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function AdminAddStudent({ store, onBack, onCreated, draft, setDraft }) {
+  const { name, grade, subjects, focus, notes, teacherId } = draft;
+  const setName = (v) => setDraft(d => ({ ...d, name: v }));
+  const setGrade = (v) => setDraft(d => ({ ...d, grade: v }));
+  const setSubjects = (v) => setDraft(d => ({ ...d, subjects: v }));
+  const setFocus = (v) => setDraft(d => ({ ...d, focus: v }));
+  const setNotes = (v) => setDraft(d => ({ ...d, notes: v }));
+  const setTeacherId = (v) => setDraft(d => ({ ...d, teacherId: v }));
+  const [done, setDone] = useState(false);
+  const [createdId, setCreatedId] = useState(null);
+  const [createdName, setCreatedName] = useState("");
+  const [createdTeacherId, setCreatedTeacherId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const canSubmit = name.trim().length > 1 && grade && subjects.length > 0;
+  const submit = async () => {
+    if (!canSubmit || saving) return;
+    setSaving(true);
+    const id = await store.addStudent({ name: name.trim(), grade: parseInt(grade) || 1, subjects, focus: focus.trim(), notes: notes.trim(), teacherId });
+    setSaving(false);
+    if (!id) return; // Fehler -> im Formular bleiben, Entwurf bleibt erhalten
+    setCreatedName(name.trim());
+    setCreatedTeacherId(teacherId);
+    setCreatedId(id);
+    setDone(true);
+    setDraft(EMPTY_STUDENT_DRAFT);
+  };
+
+  if (done) {
+    const assignedTeacher = createdTeacherId ? store.teacherById(createdTeacherId) : null;
+    return (
+      <div style={{ padding: "60px 24px 40px", textAlign: "center" }}>
+        <div style={{ width: 80, height: 80, borderRadius: 40, background: C.success + "22", display: "grid", placeItems: "center", margin: "0 auto 22px" }}>
+          <Check size={40} color={C.success} strokeWidth={2.5}/>
+        </div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: "0 0 10px", color: C.textHi, letterSpacing: -0.4 }}>Schüler angelegt.</h1>
+        <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.5, margin: "0 0 32px" }}>
+          <strong style={{ color: C.textHi }}>{createdName}</strong> ist im System.<br/>
+          {assignedTeacher ? <>Zugewiesen an <strong style={{ color: C.textHi }}>{assignedTeacher.name}</strong>.</> : "Steht aktuell ohne Zuweisung in der Liste."}
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {!assignedTeacher && (
+            <button onClick={() => onCreated(createdId, true)} style={{ padding: "14px 22px", background: C.primary, color: "#fff", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Jetzt zuweisen</button>
+          )}
+          <button onClick={() => onCreated(createdId, false)} style={{ padding: "12px 22px", background: "transparent", color: C.text, border: `1px solid ${C.border}`, borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer" }}>Fertig</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "16px 20px 40px" }}>
+      <button onClick={onBack} style={{ background: "transparent", border: "none", color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0, cursor: "pointer", marginBottom: 16, fontFamily: FF.body }}>
+        <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
+      </button>
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>NEUER SCHÜLER</div>
+        <h1 style={{ fontFamily: FF.display, fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5, color: C.textHi }}>Stammdaten anlegen</h1>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 26 }}>
+        <Field label="Name *" value={name} onChange={setName} placeholder="z.B. Anna Müller"/>
+        <Field label="Klassenstufe *" value={grade} onChange={setGrade} type="number" placeholder="1 – 13"/>
+        <SubjectsPicker selected={subjects} onChange={setSubjects}/>
+        <Field label="Schwerpunkt" value={focus} onChange={setFocus} placeholder="z.B. ZAP-Vorbereitung, LRS-Förderung"/>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Notizen</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Hintergrund, Lernstand…" style={{ width: "100%", minHeight: 80, padding: "14px 16px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 14, fontFamily: FF.body, outline: "none", boxSizing: "border-box", resize: "vertical", lineHeight: 1.5 }}/>
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Lehrkraft zuweisen · optional</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <button onClick={() => setTeacherId(null)} style={{ padding: "12px 14px", borderRadius: 10, cursor: "pointer", textAlign: "left", background: teacherId === null ? "rgba(244,145,86,.12)" : C.surface, border: `1.5px solid ${teacherId === null ? C.primary : C.border}`, color: teacherId === null ? C.primary : C.text, fontSize: 13, fontWeight: 600, fontFamily: FF.body, display: "flex", alignItems: "center", gap: 10 }}>
+              {teacherId === null && <Check size={14}/>}
+              <span style={{ flex: 1 }}>Später zuweisen</span>
+            </button>
+            {store.teachers.map(t => {
+              const matches = subjects.length > 0 && subjectsMatch(t.subjects, subjects);
+              const isOn = teacherId === t.id;
+              return (
+                <button key={t.id} onClick={() => setTeacherId(t.id)} style={{ padding: "12px 14px", borderRadius: 10, cursor: "pointer", textAlign: "left", background: isOn ? "rgba(244,145,86,.12)" : C.surface, border: `1.5px solid ${isOn ? C.primary : (matches ? C.success + "60" : C.border)}`, display: "flex", alignItems: "center", gap: 10, fontFamily: FF.body }}>
+                  <Avatar short={t.short} color={t.color} size={28}/>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.textHi, display: "flex", alignItems: "center", gap: 6 }}>
+                      {t.name}
+                      {matches && <span style={{ padding: "1px 6px", background: C.success + "22", color: C.success, fontSize: 9, fontWeight: 700, borderRadius: 4 }}>PASST</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 1 }}>{t.subjects.join(" · ")}</div>
+                  </div>
+                  {isOn && <Check size={16} color={C.primary}/>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <PrimaryButton onClick={submit} disabled={!canSubmit || saving} icon={UserPlus}>{saving ? "Speichert…" : "Schüler anlegen"}</PrimaryButton>
+    </div>
+  );
+}
+
+
+export default function App() {
+  const [isMobile, setIsMobile] = useState(false);
+  const [authedUser, setAuthedUser] = useState(null);
+  const [tab, setTab] = useState("today");
+  const [view, setView] = useState(null);
+  const [studentDraft, setStudentDraft] = useState(EMPTY_STUDENT_DRAFT);
+  // Menüwechsel: Tab setzen UND offenes Unterfenster ausblenden (Entwurf bleibt erhalten)
+  const navTab = (t) => { setTab(t); setView(null); };
+  
+  // STATT DEN DEMO-DATEN STARTEN WIR JETZT KOMPLETT LEER:
+  // Demo: alle Daten direkt geladen (kein Supabase)
+  const [teachers, setTeachers] = useState(TEACHERS);
+  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
+  const [billingLog, setBillingLog] = useState([]);
+  const [scheduleSlots, setScheduleSlots] = useState(INITIAL_SCHEDULE_SLOTS);
+  const [liveSeconds, setLiveSeconds] = useState(120);
+
+  // Demo: Daten bereits als State initialisiert — kein Supabase
+
+  const store = makeStore(teachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Live ticker for any checked-in appointment
+  useEffect(() => {
+    const interval = setInterval(() => setLiveSeconds(s => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Browser back-button handling: when in a detail view, back navigates within the app
+  // instead of leaving it. When at tab level, back leaves normally.
+  useEffect(() => {
+    if (!view) return;
+    // Push a state when entering a detail view, so the next back-press fires popstate
+    window.history.pushState({ bendiasView: true }, "");
+    const handlePop = () => setView(null);
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [view]);
+
+  // 60-minute auto-stop: any appointment that's been checked in for >= 60 minutes
+  // gets automatically checked out (and saved). Checks every 20 seconds; also at mount.
+  useEffect(() => {
+    const autoStop = () => {
+      const now = Date.now();
+      const SIXTY_MIN = 60 * 60 * 1000;
+      setAppointments(prev => {
+        const overdue = prev.filter(a => a.status === "checked-in" && a._checkedInTs && now - a._checkedInTs >= SIXTY_MIN);
+        if (overdue.length === 0) return prev;
+        // In der Datenbank festschreiben (sonst nach Reload wieder "offen")
+        // Demo: kein Supabase, nur State aktualisieren
+        return prev.map(a => {
+          if (!overdue.includes(a)) return a;
+          const end = new Date(a._checkedInTs + SIXTY_MIN);
+          return { ...a, status: "completed", checkedOutAt: hhmm(end), completedDur: a.plannedDur || 60, _autoStop: true };
+        });
+      });
+    };
+    autoStop(); // run once on mount/login
+    const t = setInterval(autoStop, 20000); // check every 20s
+    return () => clearInterval(t);
+  }, [authedUser]);
+  const handleLogin = (profile) => {
+    setAuthedUser(profile);
+    setTab(profile.role === 'admin' ? 'admin-billing' : 'today');
+    setView(null);
+  };
+
+  const isAdmin = authedUser?.role === "admin";
+
+  const renderContent = () => {
+    if (view?.type === "apt") return <AppointmentDetail aptId={view.id} store={store} onBack={() => setView(null)} onStudentClick={(id) => setView({ type: "student", id })} liveSeconds={liveSeconds}/>;
+    if (view?.type === "student") return <StudentProfile studentId={view.id} store={store} onBack={() => setView(null)} isAdmin={isAdmin} onRemoved={() => setView(null)}/>;
+    if (view?.type === "timesheet") return <Stundenzettel user={authedUser} store={store} onBack={() => setView(null)}/>;
+    if (view?.type === "add-student") return <AdminAddStudent store={store} draft={studentDraft} setDraft={setStudentDraft} onBack={() => setView(null)} onCreated={(id, wantsAssign) => { setStudentDraft(EMPTY_STUDENT_DRAFT); wantsAssign ? setView({ type: "assign", studentId: id }) : setView(null); }}/>;
+    if (view?.type === "assign") return <AdminAssign store={store} prefilledStudentId={view.studentId} onDone={() => setView(null)}/>;
+    if (view?.type === "teacher-billing") return <AdminTeacherBilling teacherId={view.id} store={store} onBack={() => setView(null)} billedBy={authedUser?.name || "Admin"}/>;
+
+    if (isAdmin) {
+      if (tab === "admin-billing") return <AdminBilling store={store} onTeacherClick={(id) => setView({ type: "teacher-billing", id })}/>;
+      if (tab === "admin-schedule") return <AdminSchedule store={store}/>;
+      if (tab === "admin-staff") return <AdminStaff store={store} onTeacherClick={(id) => setView({ type: "teacher-billing", id })}/>;
+      if (tab === "admin-students") return <AdminStudents store={store} onAdd={() => setView({ type: "add-student" })} onAssignClick={(id) => setView({ type: "assign", studentId: id })} onStudentClick={(id) => setView({ type: "student", id })}/>;
+      if (tab === "admin-today") return <AdminToday store={store}/>;
+    }
+    if (tab === "today") return <TodayScreen user={authedUser} store={store} onAptClick={(id) => setView({ type: "apt", id })} liveSeconds={liveSeconds}/>;
+    if (tab === "week") return <WeekScreen user={authedUser} store={store} onAptClick={(id) => setView({ type: "apt", id })}/>;
+    if (tab === "students") return <StudentsScreen user={authedUser} store={store} onStudentClick={(id) => setView({ type: "student", id })}/>;
+    if (tab === "profile") return <ProfileScreen user={authedUser} store={store} onLogout={() => setAuthedUser(null)} onShowTimesheet={() => setView({ type: "timesheet" })}/>;
+    return null;
+  };
+
+  return (
+    <>
+      <FontInjector/>
+      <style>{`
+        @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .4 } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        * { -webkit-tap-highlight-color: transparent; }
+        button:active { transform: scale(.98); }
+      `}</style>
+      <PhoneFrame isMobile={isMobile}>
+        {!authedUser ? (
+          isMobile ? (
+            <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+              <StatusBar/>
+              <div style={{ flex: 1, overflow: "auto" }}><Login onLogin={handleLogin}/></div>
+            </div>
+          ) : (
+            // Desktop login: centered card on a moody background
+            <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 40, background: "radial-gradient(circle at 30% 20%, #1B2B45 0%, #050B17 60%, #02050C 100%)" }}>
+              <div style={{ width: "100%", maxWidth: 440, borderRadius: 22, overflow: "hidden", background: C.bg, border: `1px solid ${C.border}`, boxShadow: "0 30px 80px -20px rgba(0,0,0,.6)" }}>
+                <Login onLogin={handleLogin}/>
+              </div>
+            </div>
+          )
+        ) : (
+          isMobile ? (
+            <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
+              <StatusBar/>
+              <AppHeader user={authedUser} onLogout={() => setAuthedUser(null)}/>
+              <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>{renderContent()}</div>
+              <BottomTabs tab={tab} setTab={navTab} isAdmin={isAdmin}/>
+            </div>
+          ) : (
+            // Desktop: sidebar + content area
+            <div style={{ display: "flex", minHeight: "100vh", background: C.bg }}>
+              <DesktopSidebar user={authedUser} tab={tab} setTab={navTab} isAdmin={isAdmin} onLogout={() => setAuthedUser(null)}/>
+              <main style={{ flex: 1, overflow: "auto", maxWidth: "100%", padding: "32px 40px 60px", display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "100%", maxWidth: 960 }}>{renderContent()}</div>
+              </main>
+            </div>
+          )
+        )}
+      </PhoneFrame>
+    </>
+  );
 }
