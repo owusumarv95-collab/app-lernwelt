@@ -294,6 +294,7 @@ function makeStore(teachers, setTeachers, students, setStudents, appointments, s
 
   return {
     teachers, students, appointments, billingLog, scheduleSlots,
+    userLocationId: null, // wird von App überschrieben
     studentById, teacherById, aptsForToday, aptsForWeek, aptsAllToday,
     lessonsForDateAll, lessonById, openHoursForTeacher, billedHoursForTeacher,
     auditForTeacher, slotsForDayLoc, slotsForDateLoc,
@@ -495,8 +496,8 @@ function AppHeader({ user, onLogout }) {
         <img src="/bendias-logo-final.png" alt="Bendias" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }}/>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi, lineHeight: 1.1 }}>{user.name}</div>
-          <div style={{ fontSize: 10, color: isAdmin ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, display: "flex", alignItems: "center", gap: 4 }}>
-            {isAdmin ? "ADMINISTRATION" : "LEHRKRAFT"}
+          <div style={{ fontSize: 10, color: isAdmin ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5 }}>
+            {user.role === "admin" ? "OBER-ADMIN" : user.role === "loc_admin" ? "STANDORTLEITUNG" : "LEHRKRAFT"}
           </div>
         </div>
       </div>
@@ -598,8 +599,8 @@ function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
         <Avatar short={user.short || (user.name || "?").split(" ").map(p=>p[0]).join("").slice(0,2).toUpperCase()} color={user.color || C.primary} size={36}/>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.textHi, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</div>
-          <div style={{ fontSize: 10, color: user.role === "admin" ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>
-            {user.role === "admin" ? "ADMIN" : "LEHRKRAFT"}
+          <div style={{ fontSize: 10, color: (user.role === "admin" || user.role === "loc_admin") ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>
+            {user.role === "admin" ? "OBER-ADMIN" : user.role === "loc_admin" ? "STANDORTLEITUNG" : "LEHRKRAFT"}
           </div>
         </div>
         <button onClick={onLogout} title="Abmelden" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, width: 32, height: 32, borderRadius: 8, display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 }}>
@@ -955,28 +956,45 @@ function ProfileScreen({ user, store, onLogout, onShowTimesheet }) {
   const monthKey = isoDateKey(nowD).slice(0, 7);
   const curMonthName = nowD.toLocaleDateString("de-DE", { month: "long" });
   const curMonthFull = nowD.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
-  const prevMonthFull = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
-  const open = store.openHoursForTeacher(user.id).filter(a => !a.dateKey || a.dateKey.slice(0, 7) === monthKey);
+  const isTeacher = user.role === "teacher";
+  const open = isTeacher ? store.openHoursForTeacher(user.id).filter(a => !a.dateKey || a.dateKey.slice(0, 7) === monthKey) : [];
   const openHrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
-  const billedThisYear = store.billedHoursForTeacher(user.id);
+  const billedThisYear = isTeacher ? store.billedHoursForTeacher(user.id) : [];
   const billedHrs = billedThisYear.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+  const roleLabel = user.role === "admin" ? "Ober-Administrator · alle Standorte" :
+    user.role === "loc_admin" ? `Standortleitung · ${user.subtitle || ""}` :
+    (user.subjects || store.teachers.find(t=>t.id===user.id)?.subjects || []).join(" · ");
+
   return (
     <div style={{ padding: "20px 20px 40px" }}>
       <div style={{ marginBottom: 22, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
         <Avatar short={user.short} color={user.color} size={80}/>
         <div style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, marginTop: 14, color: C.textHi, letterSpacing: -0.4 }}>{user.name}</div>
-        <div style={{ fontSize: 13, color: C.textDim, marginTop: 3 }}>{user.subjects.join(" · ")}</div>
+        <div style={{ fontSize: 13, color: C.textDim, marginTop: 3 }}>{roleLabel}</div>
+        <div style={{ fontSize: 11, color: C.textVeryDim, marginTop: 4 }}>{user.email}</div>
       </div>
-      <SectionHeader>Stundenkonto</SectionHeader>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
-        <BigStat value={openHrs.toFixed(1)} unit="h" label={`Offen (${curMonthName})`} color={C.primary}/>
-        <BigStat value={billedHrs.toFixed(1)} unit="h" label="Abgerechnet" color={C.success}/>
-      </div>
-      <SectionHeader>Stundenzettel</SectionHeader>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 28 }}>
-        <Row icon={FileText} label={`${curMonthFull} (offen)`} sub={`${openHrs.toFixed(1)} Std. erfasst`} action="Anzeigen" onClick={() => onShowTimesheet && onShowTimesheet()}/>
-        <Row icon={Download} label="CSV-Export" sub="Erfasste Stunden als CSV" action="Exportieren" last onClick={() => store.exportCSV(user.id)}/>
-      </div>
+
+      {isTeacher && <>
+        <SectionHeader>Stundenkonto</SectionHeader>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
+          <BigStat value={openHrs.toFixed(1)} unit="h" label={`Offen (${curMonthName})`} color={C.primary}/>
+          <BigStat value={billedHrs.toFixed(1)} unit="h" label="Abgerechnet" color={C.success}/>
+        </div>
+        <SectionHeader>Stundenzettel</SectionHeader>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 28 }}>
+          <Row icon={FileText} label={`${curMonthFull} (offen)`} sub={`${openHrs.toFixed(1)} Std. erfasst`} action="Anzeigen" onClick={() => onShowTimesheet && onShowTimesheet()}/>
+          <Row icon={Download} label="CSV-Export" sub="Erfasste Stunden als CSV" action="Exportieren" last onClick={() => store.exportCSV(user.id)}/>
+        </div>
+      </>}
+
+      {!isTeacher && <>
+        <SectionHeader>Übersicht</SectionHeader>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
+          <BigStat value={store.students.length} unit="" label="Schüler" color={C.primary}/>
+          <BigStat value={store.teachers.length} unit="" label="Lehrkräfte" color={C.success}/>
+        </div>
+      </>}
+
       <SectionHeader>Einstellungen</SectionHeader>
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, marginBottom: 28 }}>
         <Row icon={Bell} label="Benachrichtigungen" sub="Erinnerung 15 Min vorher"/>
@@ -1077,6 +1095,30 @@ function AppointmentDetail({ aptId, store, onBack, onStudentClick, liveSeconds }
   const handleCheckOut = () => {
     if (apt) store.checkOut(apt.id, notes);
     onBack();
+  };
+
+  // Zusatz-Features für Lehrkräfte
+  const [showFrueher, setShowFrueher] = React.useState(false);
+  const [showNeuSchueler, setShowNeuSchueler] = React.useState(false);
+  const [neuName, setNeuName] = React.useState("");
+  const [neuGrade, setNeuGrade] = React.useState("");
+  const [neuNotiz, setNeuNotiz] = React.useState("");
+
+  const handleCheckOutFrueher = (minuten) => {
+    if (apt) {
+      const now = new Date();
+      // checkOut mit angepasster Dauer
+      setShowFrueher(false);
+      store.checkOut && store.checkOut(apt.id, (notes || "") + ` [Früher: ${minuten}min]`);
+    }
+    onBack();
+  };
+  const handleNeuSchuelerHinzufuegen = () => {
+    if (!neuName.trim()) return;
+    const zusatz = ` [Gast: ${neuName.trim()} Kl.${neuGrade}${neuNotiz?" - "+neuNotiz:""}]`;
+    setNotes(n => (n||"") + zusatz);
+    setNeuName(""); setNeuGrade(""); setNeuNotiz("");
+    setShowNeuSchueler(false);
   };
 
   // Echte Laufzeit seit Check-in (liveSeconds als Sekunden-Takt zum Neu-Rendern)
@@ -1211,9 +1253,47 @@ function AppointmentDetail({ aptId, store, onBack, onStudentClick, liveSeconds }
                 </>
               )
             ) : (
-              <PrimaryButton onClick={handleCheckOut} icon={Square} color={`linear-gradient(135deg, ${C.danger} 0%, ${C.primaryDk} 100%)`}>
-                Auschecken & Stunde erfassen
-              </PrimaryButton>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <PrimaryButton onClick={handleCheckOut} icon={Square} color={`linear-gradient(135deg, ${C.danger} 0%, ${C.primaryDk} 100%)`}>
+                  Auschecken & Stunde erfassen
+                </PrimaryButton>
+
+                {/* Früher gegangen */}
+                <button onClick={() => setShowFrueher(!showFrueher)} style={{ width:"100%", padding:12, background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, color:C.textDim, fontSize:13, fontWeight:600, fontFamily:FF.body, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Minus size={14}/> Früher gegangen
+                </button>
+                {showFrueher && (
+                  <div style={{ background:C.surfaceLo, border:`1px solid ${C.border}`, borderRadius:12, padding:14 }}>
+                    <div style={{ fontSize:12, color:C.textDim, marginBottom:10, fontWeight:600 }}>Tatsächlich anwesend:</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                      {[15,30,45].map(m => (
+                        <button key={m} onClick={() => handleCheckOutFrueher(m)} style={{ padding:"10px 0", background:C.primaryGrad, border:"none", borderRadius:10, color:"#fff", fontSize:13, fontWeight:700, fontFamily:FF.body, cursor:"pointer" }}>{m} Min</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Neuer Schüler war dabei */}
+                <button onClick={() => setShowNeuSchueler(!showNeuSchueler)} style={{ width:"100%", padding:12, background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, color:C.textDim, fontSize:13, fontWeight:600, fontFamily:FF.body, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Plus size={14}/> Neuer Schüler war dabei
+                </button>
+                {showNeuSchueler && (
+                  <div style={{ background:C.surfaceLo, border:`1px solid ${C.border}`, borderRadius:12, padding:14 }}>
+                    <div style={{ fontSize:12, color:C.textDim, marginBottom:10, fontWeight:600 }}>Nicht im System — notieren:</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <input value={neuName} onChange={e=>setNeuName(e.target.value)} placeholder="Name" style={{ flex:1, padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.surface, color:C.textHi, fontSize:13, fontFamily:FF.body, outline:"none" }}/>
+                        <input value={neuGrade} onChange={e=>setNeuGrade(e.target.value)} placeholder="Kl." style={{ width:52, padding:"9px 10px", borderRadius:8, border:`1px solid ${C.border}`, background:C.surface, color:C.textHi, fontSize:13, fontFamily:FF.body, outline:"none" }}/>
+                      </div>
+                      <input value={neuNotiz} onChange={e=>setNeuNotiz(e.target.value)} placeholder="Notiz (optional)" style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.surface, color:C.textHi, fontSize:13, fontFamily:FF.body, outline:"none", boxSizing:"border-box" }}/>
+                      <button onClick={handleNeuSchuelerHinzufuegen} disabled={!neuName.trim()} style={{ padding:"9px 0", background:neuName.trim()?C.success:C.borderHi, border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:700, fontFamily:FF.body, cursor:neuName.trim()?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                        <Check size={13}/> In Notizen übernehmen
+                      </button>
+                    </div>
+                    <div style={{ fontSize:11, color:C.textVeryDim, marginTop:8 }}>Wird in den Notizen vermerkt. Danach als echten Schüler anlegen.</div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </>
@@ -2886,7 +2966,7 @@ function AdminStaff({ store, onTeacherClick }) {
                 <div>
                   <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Standort</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {LOCATIONS.map(loc => { const on = draft.locationId === loc.id; return <button key={loc.id} type="button" onClick={() => setDraft(p=>({...p,locationId:loc.id}))} style={{ padding:"6px 12px", borderRadius:7, border:`1.5px solid ${on?C.primary:C.border}`, background:on?C.primary+"22":C.surfaceLo, color:on?C.primary:C.textDim, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:FF.body }}>{loc.short}</button>; })}
+                    {(store.userLocationId ? LOCATIONS.filter(l=>l.id===store.userLocationId) : LOCATIONS).map(loc => { const on = draft.locationId === loc.id; return <button key={loc.id} type="button" onClick={() => setDraft(p=>({...p,locationId:loc.id}))} style={{ padding:"6px 12px", borderRadius:7, border:`1.5px solid ${on?C.primary:C.border}`, background:on?C.primary+"22":C.surfaceLo, color:on?C.primary:C.textDim, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:FF.body }}>{loc.short}</button>; })}
                   </div>
                 </div>
                 <div>
@@ -3132,7 +3212,7 @@ function AdminAssign({ store, prefilledStudentId, onDone }) {
   );
 }
 
-function AdminAddStudent({ store, onBack, onCreated, draft, setDraft }) {
+function AdminAddStudent({ store, onBack, onCreated, draft, setDraft, userLocationId }) {
   const { name, grade, subjects, focus, notes, teacherId } = draft;
   const setName = (v) => setDraft(d => ({ ...d, name: v }));
   const setGrade = (v) => setDraft(d => ({ ...d, grade: v }));
@@ -3149,7 +3229,7 @@ function AdminAddStudent({ store, onBack, onCreated, draft, setDraft }) {
   const submit = async () => {
     if (!canSubmit || saving) return;
     setSaving(true);
-    const id = await store.addStudent({ name: name.trim(), grade: parseInt(grade) || 1, subjects, focus: focus.trim(), notes: notes.trim(), teacherId, locationId: draft.locationId || LOCATIONS[0].id });
+    const id = await store.addStudent({ name: name.trim(), grade: parseInt(grade) || 1, subjects, focus: focus.trim(), notes: notes.trim(), teacherId, locationId: userLocationId || draft.locationId || LOCATIONS[0].id });
     setSaving(false);
     if (!id) return; // Fehler -> im Formular bleiben, Entwurf bleibt erhalten
     setCreatedName(name.trim());
@@ -3193,15 +3273,22 @@ function AdminAddStudent({ store, onBack, onCreated, draft, setDraft }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 26 }}>
         <Field label="Name *" value={name} onChange={setName} placeholder="z.B. Anna Müller"/>
         <Field label="Klassenstufe *" value={grade} onChange={setGrade} type="number" placeholder="1 – 13"/>
-        <div>
-          <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Standort *</label>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {LOCATIONS.map(loc => {
-              const on = (draft.locationId || LOCATIONS[0].id) === loc.id;
-              return <button key={loc.id} type="button" onClick={() => setDraft(d => ({...d, locationId: loc.id}))} style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primary+"22" : C.surface, color: on ? C.primary : C.text, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: FF.body }}>{loc.name}</button>;
-            })}
+        {!userLocationId && (
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Standort *</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {LOCATIONS.map(loc => {
+                const on = (draft.locationId || LOCATIONS[0].id) === loc.id;
+                return <button key={loc.id} type="button" onClick={() => setDraft(d => ({...d, locationId: loc.id}))} style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primary+"22" : C.surface, color: on ? C.primary : C.text, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: FF.body }}>{loc.name}</button>;
+              })}
+            </div>
           </div>
-        </div>
+        )}
+        {userLocationId && (
+          <div style={{ padding:"8px 14px", background:C.surfaceLo, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, color:C.textDim }}>
+            Standort: <strong style={{color:C.textHi}}>{LOCATIONS.find(l=>l.id===userLocationId)?.name}</strong>
+          </div>
+        )}
         <SubjectsPicker selected={subjects} onChange={setSubjects}/>
         <Field label="Schwerpunkt" value={focus} onChange={setFocus} placeholder="z.B. ZAP-Vorbereitung, LRS-Förderung"/>
         <div>
@@ -3274,6 +3361,8 @@ export default function App() {
   const storeSlots = isLocAdmin ? filteredSlots : scheduleSlots;
 
   const store = makeStore(storeTeachers, setTeachers, storeStudents, setStudents, storeApts, setAppointments, billingLog, setBillingLog, storeSlots, setScheduleSlots);
+  // UserLocationId in store schreiben für Komponenten
+  store.userLocationId = isLocAdmin ? userLocId : null;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -3333,7 +3422,7 @@ export default function App() {
     if (view?.type === "apt") return <AppointmentDetail aptId={view.id} store={store} onBack={() => setView(null)} onStudentClick={(id) => setView({ type: "student", id })} liveSeconds={liveSeconds}/>;
     if (view?.type === "student") return <StudentProfile studentId={view.id} store={store} onBack={() => setView(null)} isAdmin={isAdmin} onRemoved={() => setView(null)}/>;
     if (view?.type === "timesheet") return <Stundenzettel user={authedUser} store={store} onBack={() => setView(null)}/>;
-    if (view?.type === "add-student") return <AdminAddStudent store={store} draft={studentDraft} setDraft={setStudentDraft} onBack={() => setView(null)} onCreated={(id, wantsAssign) => { setStudentDraft(EMPTY_STUDENT_DRAFT); wantsAssign ? setView({ type: "assign", studentId: id }) : setView(null); }}/>;
+    if (view?.type === "add-student") return <AdminAddStudent store={store} draft={studentDraft} setDraft={setStudentDraft} userLocationId={authedUser?.role==="loc_admin"?authedUser.locationId:null} onBack={() => setView(null)} onCreated={(id, wantsAssign) => { setStudentDraft(EMPTY_STUDENT_DRAFT); wantsAssign ? setView({ type: "assign", studentId: id }) : setView(null); }}/>;
     if (view?.type === "assign") return <AdminAssign store={store} prefilledStudentId={view.studentId} onDone={() => setView(null)}/>;
     if (view?.type === "teacher-billing") return <AdminTeacherBilling teacherId={view.id} store={store} onBack={() => setView(null)} billedBy={authedUser?.name || "Admin"}/>;
 
