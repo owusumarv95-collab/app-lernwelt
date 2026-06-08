@@ -232,7 +232,7 @@ const billingLogFromDB = (r) => {
     formatted: d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
   };
 };
-const EMPTY_STUDENT_DRAFT = { name: "", grade: "", subjects: [], focus: "", notes: "", teacherId: null };
+const EMPTY_STUDENT_DRAFT = { name: "", grade: "", subjects: [], focus: "", notes: "", teacherId: null, locationId: null };
 
 function makeStore(teachers, setTeachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots) {
   const studentById = (id) => students.find(s => s.id === id);
@@ -301,8 +301,9 @@ function makeStore(teachers, setTeachers, students, setStudents, appointments, s
     addStudent: (data) => {
       const id = Date.now();
       const short = (data.name||"?").split(" ").filter(Boolean).map(p=>p[0]).join("").slice(0,2).toUpperCase()||"??";
-      setStudents(prev => [...prev, { id, name: data.name||"Neuer Schueler", short, grade: data.grade||1, subjects: data.subjects||[], teacherId: data.teacherId??null, focus: data.focus||"Neu", notes: data.notes||"", since: new Date().toLocaleDateString("de-DE",{month:"short",year:"numeric"}), locationId: data.locationId||LOCATIONS[0].id }]);
-      return id;
+      const student = { id, name: data.name||"Neuer Schueler", short, grade: data.grade||1, subjects: data.subjects||[], teacherId: data.teacherId??null, focus: data.focus||"Neu", notes: data.notes||"", since: new Date().toLocaleDateString("de-DE",{month:"short",year:"numeric"}), locationId: data.locationId||LOCATIONS[0].id };
+      setStudents(prev => [...prev, student]);
+      return Promise.resolve(id);
     },
     updateStudent: (sid, patch) => {
       setStudents(prev => prev.map(s => {
@@ -357,6 +358,16 @@ function makeStore(teachers, setTeachers, students, setStudents, appointments, s
       setAppointments(prev => prev.map(a => ids.includes(a.id) ? { ...a, billed: true, billedMonth: month, billedBy } : a));
       const entry = { id: Date.now(), teacherId, teacherName: teacher?.name, month, hours, cost, billedBy, timestamp: now.getTime(), formatted: now.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+" · "+now.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) };
       setBillingLog(prev => [...prev, entry]);
+      // CSV direkt nach Abrechnung anbieten
+      const wdS=["So","Mo","Di","Mi","Do","Fr","Sa"]; const rateStr=(teacher?.rate||0).toFixed(2).replace(".",",");
+      const byDay={}; open.forEach(a=>{byDay[a.dateKey||""]=(byDay[a.dateKey||""]||0)+(a.completedDur||0);});
+      const days=Object.keys(byDay).filter(Boolean).sort(); const totalMin=days.reduce((s,dk)=>s+byDay[dk],0); const totalHrs=totalMin/60;
+      const rows=[["Leistungsnachweis",teacher?.name||""],["Zeitraum",month],["Stundensatz",rateStr],[],["Datum","Wochentag","Stunden","Satz","Betrag"],...days.map(dk=>{const h=byDay[dk]/60;return[dk,wdS[new Date(dk+"T00:00:00").getDay()],h.toFixed(2).replace(".",","),rateStr,(h*(teacher?.rate||0)).toFixed(2).replace(".",",")];}),[], ["Summe","",totalHrs.toFixed(2).replace(".",","),"",(totalHrs*(teacher?.rate||0)).toFixed(2).replace(".",",")]];
+      const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+      const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+      const url=URL.createObjectURL(blob); const link=document.createElement("a");
+      link.href=url; link.download=`leistungsnachweis_${(teacher?.name||"").replace(/\s+/g,"_")}_${month.replace(/\s+/g,"_")}.csv`;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
     },
     exportCSV: (teacherId) => {
       const t = teachers.find(x => x.id === teacherId); if (!t) return;
@@ -381,6 +392,7 @@ function makeStore(teachers, setTeachers, students, setStudents, appointments, s
       }
     },
     removeSlot: (slotId) => { setScheduleSlots(prev => prev.filter(s => s.id !== slotId)); },
+    addTeacher: (data) => { setTeachers(prev => [...prev, data]); },
     copyDayToDay: (fromDay, toDay, locationId) => {
       const source = scheduleSlots.filter(s => s.day === fromDay && s.locationId === locationId && !s.onDate);
       setScheduleSlots(prev => [...prev.filter(s => !(s.day === toDay && s.locationId === locationId && !s.onDate)), ...source.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}`, day: toDay }))]);
@@ -641,7 +653,7 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", padding: "48px 28px 40px", background: C.bgGrad }}>
+    <div style={{ minHeight: "100%", maxHeight: "100%", overflow: "auto", display: "flex", flexDirection: "column", padding: "48px 28px 40px", background: C.bgGrad }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
         <div style={{ width: 44, height: 44, borderRadius: 12, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 18, fontFamily: FF.display }}>L</div>
         <div>
@@ -2801,24 +2813,45 @@ function AdminToday({ store }) {
 }
 
 function AdminStaff({ store, onTeacherClick }) {
+  const [showInvite, setShowInvite] = React.useState(false);
+  const [draft, setDraft] = React.useState({ name: "", email: "", subjects: [], rate: "22", locationId: LOCATIONS[0].id });
+  const [invited, setInvited] = React.useState(false);
+  const COLORS = ["#F49156","#5BCFB1","#7AB8E8","#F4D35E","#A78BFA","#F472B6","#34D399","#60A5FA"];
+
+  const handleInvite = () => {
+    if (!draft.name || !draft.email) return;
+    const short = draft.name.split(" ").filter(Boolean).map(p=>p[0]).join("").slice(0,2).toUpperCase();
+    const color = COLORS[store.teachers.length % COLORS.length];
+    store.addTeacher && store.addTeacher({ id: Date.now(), name: draft.name, short, email: draft.email, rate: parseFloat(draft.rate)||22, subjects: draft.subjects, color, role: "teacher", locationId: draft.locationId });
+    setInvited(true);
+    setTimeout(() => { setShowInvite(false); setInvited(false); setDraft({ name:"", email:"", subjects:[], rate:"22", locationId: LOCATIONS[0].id }); }, 2000);
+  };
+
   return (
     <div style={{ padding: "20px 20px 40px" }}>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · LEHRKRÄFTE</div>
-        <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>{store.teachers.length} Lehrer aktiv</h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div>
+          <div style={{ color: C.primary, fontSize: 12, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>ADMIN · LEHRKRÄFTE</div>
+          <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: -0.6, color: C.textHi }}>{store.teachers.length} Lehrer aktiv</h1>
+        </div>
+        <button onClick={() => setShowInvite(true)} style={{ padding: "10px 16px", background: C.primaryGrad, border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <UserPlus size={15}/> Einladen
+        </button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {store.teachers.map(t => {
           const myStudents = store.students.filter(s => s.teacherId === t.id);
           const open = store.openHoursForTeacher(t.id);
           const hrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
+          const loc = LOCATIONS.find(l => l.id === t.locationId);
           return (
             <button key={t.id} onClick={() => onTeacherClick(t.id)} style={{ width: "100%", textAlign: "left", padding: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                 <Avatar short={t.short} color={t.color} size={42}/>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 15, color: C.textHi }}>{t.name}</div>
-                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{t.subjects.join(" · ")}</div>
+                  <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>{(t.subjects||[]).join(" · ")} · {t.rate}€/h</div>
+                  {loc && <div style={{ fontSize: 10, color: loc.color||C.primary, fontWeight: 700, marginTop: 2 }}>{loc.name}</div>}
                 </div>
                 <ChevronRight size={18} color={C.textVeryDim}/>
               </div>
@@ -2831,6 +2864,48 @@ function AdminStaff({ store, onTeacherClick }) {
           );
         })}
       </div>
+
+      {showInvite && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 420, maxHeight: "85vh", overflow: "auto" }}>
+            {invited ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <CheckCircle2 size={48} color={C.success} style={{ marginBottom: 14 }}/>
+                <div style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, color: C.textHi }}>Einladung gesendet!</div>
+                <div style={{ fontSize: 13, color: C.textDim, marginTop: 8 }}>{draft.name} wurde angelegt.</div>
+              </div>
+            ) : <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                <h3 style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, margin: 0, color: C.textHi }}>Lehrkraft einladen</h3>
+                <button onClick={() => setShowInvite(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: C.textDim }}><X size={20}/></button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Field label="Name *" value={draft.name} onChange={v => setDraft(p=>({...p,name:v}))} placeholder="Vor- und Nachname"/>
+                <Field label="E-Mail" type="email" value={draft.email} onChange={v => setDraft(p=>({...p,email:v}))} placeholder="name@lernwelt.de"/>
+                <Field label="Stundensatz (€)" type="number" value={draft.rate} onChange={v => setDraft(p=>({...p,rate:v}))} placeholder="22"/>
+                <div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Standort</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {LOCATIONS.map(loc => { const on = draft.locationId === loc.id; return <button key={loc.id} type="button" onClick={() => setDraft(p=>({...p,locationId:loc.id}))} style={{ padding:"6px 12px", borderRadius:7, border:`1.5px solid ${on?C.primary:C.border}`, background:on?C.primary+"22":C.surfaceLo, color:on?C.primary:C.textDim, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:FF.body }}>{loc.short}</button>; })}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Fächer</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {ALL_SUBJECTS.map(s => { const on = draft.subjects.includes(s); return <button key={s} type="button" onClick={() => setDraft(p=>({...p,subjects:on?p.subjects.filter(x=>x!==s):[...p.subjects,s]}))} style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${on?C.primary:C.border}`, background:on?C.primary+"22":C.surfaceLo, color:on?C.primary:C.textDim, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:FF.body }}>{s}</button>; })}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <button onClick={() => setShowInvite(false)} style={{ flex:1, padding:12, background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, color:C.text, fontSize:13, fontWeight:700, fontFamily:FF.body, cursor:"pointer" }}>Abbrechen</button>
+                  <button onClick={handleInvite} disabled={!draft.name||!draft.email} style={{ flex:1, padding:12, background:draft.name&&draft.email?C.primaryGrad:C.borderHi, border:"none", borderRadius:10, color:"#fff", fontSize:13, fontWeight:700, fontFamily:FF.body, cursor:draft.name&&draft.email?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    <UserPlus size={13}/> Einladen
+                  </button>
+                </div>
+              </div>
+            </>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3074,7 +3149,7 @@ function AdminAddStudent({ store, onBack, onCreated, draft, setDraft }) {
   const submit = async () => {
     if (!canSubmit || saving) return;
     setSaving(true);
-    const id = await store.addStudent({ name: name.trim(), grade: parseInt(grade) || 1, subjects, focus: focus.trim(), notes: notes.trim(), teacherId });
+    const id = await store.addStudent({ name: name.trim(), grade: parseInt(grade) || 1, subjects, focus: focus.trim(), notes: notes.trim(), teacherId, locationId: draft.locationId || LOCATIONS[0].id });
     setSaving(false);
     if (!id) return; // Fehler -> im Formular bleiben, Entwurf bleibt erhalten
     setCreatedName(name.trim());
@@ -3118,6 +3193,15 @@ function AdminAddStudent({ store, onBack, onCreated, draft, setDraft }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 26 }}>
         <Field label="Name *" value={name} onChange={setName} placeholder="z.B. Anna Müller"/>
         <Field label="Klassenstufe *" value={grade} onChange={setGrade} type="number" placeholder="1 – 13"/>
+        <div>
+          <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Standort *</label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {LOCATIONS.map(loc => {
+              const on = (draft.locationId || LOCATIONS[0].id) === loc.id;
+              return <button key={loc.id} type="button" onClick={() => setDraft(d => ({...d, locationId: loc.id}))} style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primary+"22" : C.surface, color: on ? C.primary : C.text, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: FF.body }}>{loc.name}</button>;
+            })}
+          </div>
+        </div>
         <SubjectsPicker selected={subjects} onChange={setSubjects}/>
         <Field label="Schwerpunkt" value={focus} onChange={setFocus} placeholder="z.B. ZAP-Vorbereitung, LRS-Förderung"/>
         <div>
@@ -3168,14 +3252,28 @@ export default function App() {
   
   // STATT DEN DEMO-DATEN STARTEN WIR JETZT KOMPLETT LEER:
   const [teachers, setTeachers] = useState(TEACHERS);
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState(INITIAL_STUDENTS);
   const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
   const [billingLog, setBillingLog] = useState([]);
   const [scheduleSlots, setScheduleSlots] = useState(INITIAL_SCHEDULE_SLOTS);
   const [liveSeconds, setLiveSeconds] = useState(120);
 
   // Demo: Daten bereits initialisiert
-  const store = makeStore(teachers, setTeachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots);
+  // Rollenbasierter Filter
+  const userLocId = authedUser?.locationId || null;
+  const isLocAdmin = authedUser?.role === "loc_admin";
+  const filteredTeachers = isLocAdmin ? teachers.filter(t => !t.locationId || t.locationId === userLocId) : teachers;
+  const filteredStudents = isLocAdmin ? students.filter(s => !s.locationId || s.locationId === userLocId) : students;
+  const filteredApts = isLocAdmin ? appointments.filter(a => a.locationId ? a.locationId === userLocId : true) : appointments;
+  const filteredSlots = isLocAdmin ? scheduleSlots.filter(s => !s.locationId || s.locationId === userLocId) : scheduleSlots;
+
+  // Store mit gefilterten Daten für loc_admin, vollen Daten für ober-admin/lehrer
+  const storeTeachers = isLocAdmin ? filteredTeachers : teachers;
+  const storeStudents = isLocAdmin ? filteredStudents : students;
+  const storeApts = isLocAdmin ? filteredApts : appointments;
+  const storeSlots = isLocAdmin ? filteredSlots : scheduleSlots;
+
+  const store = makeStore(storeTeachers, setTeachers, storeStudents, setStudents, storeApts, setAppointments, billingLog, setBillingLog, storeSlots, setScheduleSlots);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
