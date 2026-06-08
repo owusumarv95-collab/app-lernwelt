@@ -1922,14 +1922,20 @@ function PinModal({ title, subtitle, pin, setPin, error, onSubmit, onCancel }) {
    ADMIN SCHEDULE — weekly plan builder
    ========================================================= */
 function AdminSchedule({ store }) {
-  const [viewMode, setViewMode] = useState("week"); // "day" | "week" | "month"
-  const [day, setDay] = useState(2); // selected day for day view
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, 1 = next, -1 = previous
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = this month
-  const [locId, setLocId] = useState(LOCATIONS[0].id);
+  const [viewMode, setViewMode] = useState("week");
+  const [day, setDay] = useState(2);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
+  // loc_admin sieht nur seinen Standort — kein Wechsel möglich
+  const [locId, setLocId] = useState(store.userLocationId || LOCATIONS[0].id);
   const [editingSlot, setEditingSlot] = useState(null);
   const [confirmCopy, setConfirmCopy] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+
+  // Welche Standorte darf dieser User sehen?
+  const visibleLocations = store.userLocationId
+    ? LOCATIONS.filter(l => l.id === store.userLocationId)
+    : LOCATIONS;
 
   const rooms = ROOMS_BY_LOCATION[locId] || [];
 
@@ -2002,10 +2008,10 @@ function AdminSchedule({ store }) {
         })}
       </div>
 
-      {/* Location switcher */}
-      {LOCATIONS.length > 1 && (
+      {/* Location switcher — nur für Ober-Admin alle Standorte, loc_admin sieht nur seinen */}
+      {visibleLocations.length > 1 && (
         <div style={{ display: "flex", gap: 6, marginBottom: 14, padding: "0 4px" }}>
-          {LOCATIONS.map(loc => {
+          {visibleLocations.map(loc => {
             const isOn = loc.id === locId;
             return (
               <button key={loc.id} onClick={() => setLocId(loc.id)} style={{
@@ -2021,6 +2027,11 @@ function AdminSchedule({ store }) {
               </button>
             );
           })}
+        </div>
+      )}
+      {visibleLocations.length === 1 && (
+        <div style={{ padding: "8px 12px", background: C.surfaceLo, border: `1px solid ${C.border}`, borderRadius: 10, marginBottom: 14, fontSize: 12, color: C.textDim, display: "flex", alignItems: "center", gap: 6 }}>
+          <MapPin size={12}/> <strong style={{ color: C.textHi }}>{visibleLocations[0].name}</strong>
         </div>
       )}
 
