@@ -15,12 +15,12 @@ import {
 
 
 const C = {
-  bg: "#0A1628", bgGrad: "linear-gradient(180deg, #0E1A2F 0%, #0A1628 100%)",
-  surface: "#152339", surfaceHi: "#1D2D47", surfaceLo: "#0F1B2D",
-  border: "#2A3B57", borderHi: "#3D5275",
-  primary: "#F49156", primaryGrad: "linear-gradient(135deg, #F4A261 0%, #E76F51 100%)",
-  success: "#5BCFB1", warn: "#F4D35E", danger: "#E76F51", info: "#7AB8E8",
-  textHi: "#F5F1E8", text: "#D4D8E0", textDim: "#8A95A8", textVeryDim: "#5B6B85",
+  bg: "#F5F7FB", bgGrad: "linear-gradient(180deg, #FFFFFF 0%, #F0F4FA 100%)",
+  surface: "#FFFFFF", surfaceHi: "#EEF2F9", surfaceLo: "#F0F4FA",
+  border: "#DDE3EF", borderHi: "#C8D4E8",
+  primary: "#E8650A", primaryGrad: "linear-gradient(135deg, #F07820 0%, #E8650A 100%)",
+  success: "#16A34A", warn: "#D97706", danger: "#DC2626", info: "#2563EB",
+  textHi: "#0F1B2D", text: "#374151", textDim: "#6B7280", textVeryDim: "#9CA3AF",
 };
 
 const FF = {
@@ -36,17 +36,17 @@ const HOURLY_RATE = 22; // EUR — demo rate for payroll display
 const ADMIN_PIN = "1234"; // Demo PIN for billing confirmation
 
 const LOCATIONS = [
-  { id: "heerdt",  name: "Dusseldorf Heerdt",  short: "Heerdt",  color: "#1A3A6B" },
-  { id: "garath",  name: "Dusseldorf Garath",  short: "Garath",  color: "#2563EB" },
-  { id: "neuss-i", name: "Neuss Innenstadt",   short: "Neuss-I", color: "#E8650A" },
-  { id: "neuss-f", name: "Neuss Furth",        short: "Neuss-F", color: "#16A34A" },
+  { id: "heerdt",  name: "Duesseldorf Heerdt",  short: "Heerdt",  color: "#1A3A6B" },
+  { id: "garath",  name: "Duesseldorf Garath",  short: "Garath",  color: "#2563EB" },
+  { id: "neuss-i", name: "Neuss Innenstadt",    short: "Neuss-I", color: "#E8650A" },
+  { id: "neuss-f", name: "Neuss Furth",         short: "Neuss-F", color: "#16A34A" },
 ];
 
 const ROOMS_BY_LOCATION = {
-  "heerdt":  [{ id: "h1", name: "Raum 1" },{ id: "h2", name: "Raum 2" },{ id: "h3", name: "Raum 3" }],
-  "garath":  [{ id: "g1", name: "Raum 1" },{ id: "g2", name: "Raum 2" },{ id: "g3", name: "Raum 3" }],
-  "neuss-i": [{ id: "n1", name: "Raum 1" },{ id: "n2", name: "Raum 2" }],
-  "neuss-f": [{ id: "f1", name: "Raum 1" },{ id: "f2", name: "Raum 2" }],
+  "heerdt":  [{id:"h1",name:"Raum 1"},{id:"h2",name:"Raum 2"},{id:"h3",name:"Raum 3"}],
+  "garath":  [{id:"g1",name:"Raum 1"},{id:"g2",name:"Raum 2"},{id:"g3",name:"Raum 3"}],
+  "neuss-i": [{id:"n1",name:"Raum 1"},{id:"n2",name:"Raum 2"}],
+  "neuss-f": [{id:"f1",name:"Raum 1"},{id:"f2",name:"Raum 2"}],
 };
 
 // Possible start times — every 30 min from 13:00 to 18:00 (last course ends at 19:00)
@@ -79,118 +79,100 @@ const isoWeek = (date) => {
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const TEACHERS = [
-  { id: 1, name: "Herr Stolle",   short: "ST", subjects: ["Mathe", "Physik", "Informatik"], color: "#F49156", role: "teacher", email: "stolle@lernwelt.de", rate: 25, locationId: "heerdt" },
-  { id: 2, name: "Frau Yilmaz",   short: "YI", subjects: ["Deutsch", "DaZ", "LRS"],         color: "#5BCFB1", role: "teacher", email: "yilmaz@lernwelt.de", rate: 24, locationId: "heerdt" },
-  { id: 3, name: "Herr Kovac",    short: "KO", subjects: ["Englisch", "Franzoesisch"],       color: "#7AB8E8", role: "teacher", email: "kovac@lernwelt.de",  rate: 23, locationId: "garath" },
-  { id: 4, name: "Frau Nguyen",   short: "NG", subjects: ["Mathe", "Dyskalkulie", "ZP10"],  color: "#F4D35E", role: "teacher", email: "nguyen@lernwelt.de", rate: 26, locationId: "neuss-i" },
-  { id: 5, name: "Herr Schreiber",short: "SC", subjects: ["Chemie", "Biologie"],            color: "#A78BFA", role: "teacher", email: "schreiber@lernwelt.de", rate: 24, locationId: "neuss-i" },
-  { id: 6, name: "Frau Becker",   short: "BE", subjects: ["Vorschule", "Deutsch"],          color: "#F472B6", role: "teacher", email: "becker@lernwelt.de",  rate: 22, locationId: "neuss-f" },
+  { id: 1, name: "Herr Stolle",    short: "ST", subjects: ["Mathe","Physik","Informatik"],  color: "#E8650A", role: "teacher", email: "stolle@lernwelt.de",    rate: 25, locationId: "heerdt"  },
+  { id: 2, name: "Frau Yilmaz",   short: "YI", subjects: ["Deutsch","DaZ","LRS"],          color: "#1A3A6B", role: "teacher", email: "yilmaz@lernwelt.de",    rate: 24, locationId: "heerdt"  },
+  { id: 3, name: "Herr Kovac",    short: "KO", subjects: ["Englisch","Franzoesisch"],       color: "#2563EB", role: "teacher", email: "kovac@lernwelt.de",     rate: 23, locationId: "garath"  },
+  { id: 4, name: "Frau Nguyen",   short: "NG", subjects: ["Mathe","Dyskalkulie","ZP10"],   color: "#16A34A", role: "teacher", email: "nguyen@lernwelt.de",    rate: 26, locationId: "neuss-i" },
+  { id: 5, name: "Herr Schreiber",short: "SC", subjects: ["Chemie","Biologie"],            color: "#7C3AED", role: "teacher", email: "schreiber@lernwelt.de", rate: 24, locationId: "neuss-i" },
+  { id: 6, name: "Frau Becker",   short: "BE", subjects: ["Vorschule","Deutsch"],          color: "#DB2777", role: "teacher", email: "becker@lernwelt.de",    rate: 22, locationId: "neuss-f" },
 ];
 
 const ADMIN_USER = {
-  id: 99, name: "Admin", short: "AD", color: "#E76F51",
+  id: 99, name: "Admin", short: "AD", color: "#E8650A",
   role: "admin", email: "admin@lernwelt.de",
 };
 
-// Demo-Login Nutzer (alle)
 const DEMO_USERS = [
-  { id: 99, name: "Admin",          short: "AD", color: "#E76F51", role: "admin",   email: "admin@lernwelt.de",       password: "demo1234" },
-  { id: 1,  name: "Herr Stolle",    short: "ST", color: "#F49156", role: "teacher", email: "stolle@lernwelt.de",      password: "demo1234" },
-  { id: 2,  name: "Frau Yilmaz",    short: "YI", color: "#5BCFB1", role: "teacher", email: "yilmaz@lernwelt.de",      password: "demo1234" },
-  { id: 3,  name: "Herr Kovac",     short: "KO", color: "#7AB8E8", role: "teacher", email: "kovac@lernwelt.de",       password: "demo1234" },
-  { id: 4,  name: "Frau Nguyen",    short: "NG", color: "#F4D35E", role: "teacher", email: "nguyen@lernwelt.de",      password: "demo1234" },
-  { id: 5,  name: "Herr Schreiber", short: "SC", color: "#A78BFA", role: "teacher", email: "schreiber@lernwelt.de",   password: "demo1234" },
-  { id: 6,  name: "Frau Becker",    short: "BE", color: "#F472B6", role: "teacher", email: "becker@lernwelt.de",      password: "demo1234" },
+  { id: 99, name: "Admin (Ober)",        short: "AD", color: "#E8650A", role: "admin",     email: "admin@lernwelt.de",      password: "demo1234", subtitle: "Alle 4 Standorte" },
+  { id: 51, name: "Frau Kowollik",       short: "KW", color: "#1A3A6B", role: "loc_admin", email: "heerdt@lernwelt.de",     password: "demo1234", subtitle: "Standortleitung Heerdt",  locationId: "heerdt"  },
+  { id: 52, name: "Herr Dimitriou",      short: "DI", color: "#2563EB", role: "loc_admin", email: "garath@lernwelt.de",     password: "demo1234", subtitle: "Standortleitung Garath",  locationId: "garath"  },
+  { id: 53, name: "Frau Sahin",          short: "SA", color: "#E8650A", role: "loc_admin", email: "neuss-i@lernwelt.de",    password: "demo1234", subtitle: "Standortleitung Neuss-I", locationId: "neuss-i" },
+  { id: 54, name: "Herr Wolters",        short: "WO", color: "#16A34A", role: "loc_admin", email: "neuss-f@lernwelt.de",    password: "demo1234", subtitle: "Standortleitung Neuss-F", locationId: "neuss-f" },
+  { id: 1,  name: "Herr Stolle",         short: "ST", color: "#E8650A", role: "teacher",   email: "stolle@lernwelt.de",     password: "demo1234", subtitle: "Mathe · Physik · Informatik" },
+  { id: 2,  name: "Frau Yilmaz",         short: "YI", color: "#1A3A6B", role: "teacher",   email: "yilmaz@lernwelt.de",     password: "demo1234", subtitle: "Deutsch · DaZ · LRS" },
+  { id: 3,  name: "Herr Kovac",          short: "KO", color: "#2563EB", role: "teacher",   email: "kovac@lernwelt.de",      password: "demo1234", subtitle: "Englisch · Franzoesisch" },
+  { id: 4,  name: "Frau Nguyen",         short: "NG", color: "#16A34A", role: "teacher",   email: "nguyen@lernwelt.de",     password: "demo1234", subtitle: "Mathe · Dyskalkulie · ZP10" },
+  { id: 5,  name: "Herr Schreiber",      short: "SC", color: "#7C3AED", role: "teacher",   email: "schreiber@lernwelt.de",  password: "demo1234", subtitle: "Chemie · Biologie" },
+  { id: 6,  name: "Frau Becker",         short: "BE", color: "#DB2777", role: "teacher",   email: "becker@lernwelt.de",     password: "demo1234", subtitle: "Vorschule · Deutsch" },
 ];
 
 const INITIAL_STUDENTS = [
-  // Heerdt
-  { id: 1,  name: "Mia Hoffmann",   short: "MH", grade: 9,  subjects: ["Mathe"],          teacherId: 1, locationId: "heerdt",  focus: "ZP10-Vorbereitung", since: "Sep 2024", notes: "Algebra sicher, Stochastik noch schwach." },
-  { id: 2,  name: "Leon Mueller",   short: "LM", grade: 5,  subjects: ["Deutsch", "LRS"], teacherId: 2, locationId: "heerdt",  focus: "LRS-Foerderung",   since: "Jan 2025", notes: "Grosser Fortschritt beim Lesen." },
-  { id: 3,  name: "Noah Bauer",     short: "NB", grade: 11, subjects: ["Mathe", "Physik"],teacherId: 1, locationId: "heerdt",  focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Klausurniveau erreicht." },
-  { id: 4,  name: "Amira Hassan",   short: "AH", grade: 5,  subjects: ["Deutsch", "DaZ"],teacherId: 2, locationId: "heerdt",  focus: "Integration",      since: "Jan 2025", notes: "Sprache wird deutlich besser." },
-  // Garath
-  { id: 5,  name: "Sophia Kaya",    short: "SK", grade: 7,  subjects: ["Englisch"],       teacherId: 3, locationId: "garath",  focus: "Grammatik",        since: "Okt 2024", notes: "Vocabulary sehr gut." },
-  { id: 6,  name: "Tim Weber",      short: "TW", grade: 10, subjects: ["Englisch"],       teacherId: 3, locationId: "garath",  focus: "Abitur-Niveau",    since: "Sep 2024", notes: "Speaking sehr stark." },
-  { id: 7,  name: "Hana Al-Rashid", short: "HA", grade: 6,  subjects: ["Deutsch", "DaZ"],teacherId: 3, locationId: "garath",  focus: "Sprachfoerderung", since: "Feb 2025", notes: "Toll integriert." },
-  // Neuss-I
-  { id: 8,  name: "Lena Braun",     short: "LB", grade: 4,  subjects: ["Mathe", "Dyskalkulie"], teacherId: 4, locationId: "neuss-i", focus: "Dyskalkulie", since: "Okt 2024", notes: "Mengenverstaendnis waechst." },
-  { id: 9,  name: "Jonas Klein",    short: "JK", grade: 9,  subjects: ["Mathe"],          teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Sep 2024", notes: "Stochastik verbessert." },
-  { id: 10, name: "Lukas Fischer",  short: "LF", grade: 8,  subjects: ["Chemie"],         teacherId: 5, locationId: "neuss-i", focus: "Klausur-Prep",     since: "Nov 2024", notes: "Organische Chemie schwierig." },
-  { id: 11, name: "Nele Wagner",    short: "NW", grade: 9,  subjects: ["Mathe"],          teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Mär 2025", notes: "Sehr ehrgeizig." },
-  // Neuss-F
-  { id: 12, name: "Emma Schaefer",  short: "ES", grade: 3,  subjects: ["Vorschule"],      teacherId: 6, locationId: "neuss-f", focus: "Schulstart",       since: "Mär 2025", notes: "Sehr fleissig." },
-  { id: 13, name: "Felix Richter",  short: "FR", grade: 12, subjects: ["Mathe"],          teacherId: 4, locationId: "neuss-f", focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Auf Kurs." },
+  { id: 1,  name: "Mia Hoffmann",   short: "MH", grade: 9,  subjects: ["Mathe"],           teacherId: 1, locationId: "heerdt",  focus: "ZP10-Vorbereitung", since: "Sep 2024", notes: "Algebra sicher, Stochastik schwach." },
+  { id: 2,  name: "Leon Mueller",   short: "LM", grade: 5,  subjects: ["Deutsch","LRS"],   teacherId: 2, locationId: "heerdt",  focus: "LRS-Foerderung",   since: "Jan 2025", notes: "Grosser Fortschritt beim Lesen." },
+  { id: 3,  name: "Noah Bauer",     short: "NB", grade: 11, subjects: ["Mathe","Physik"],  teacherId: 1, locationId: "heerdt",  focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Klausurniveau erreicht." },
+  { id: 4,  name: "Amira Hassan",   short: "AH", grade: 5,  subjects: ["Deutsch","DaZ"],  teacherId: 2, locationId: "heerdt",  focus: "Integration",      since: "Jan 2025", notes: "Deutsch wird besser." },
+  { id: 5,  name: "Sophia Kaya",    short: "SK", grade: 7,  subjects: ["Englisch"],        teacherId: 3, locationId: "garath",  focus: "Grammatik",        since: "Okt 2024", notes: "Vocabulary sehr gut." },
+  { id: 6,  name: "Tim Weber",      short: "TW", grade: 10, subjects: ["Englisch"],        teacherId: 3, locationId: "garath",  focus: "Abitur-Niveau",    since: "Sep 2024", notes: "Speaking sehr stark." },
+  { id: 7,  name: "Hana Al-Rashid", short: "HA", grade: 6,  subjects: ["Deutsch","DaZ"],  teacherId: 3, locationId: "garath",  focus: "Sprachfoerderung", since: "Feb 2025", notes: "Toll integriert." },
+  { id: 8,  name: "Lena Braun",     short: "LB", grade: 4,  subjects: ["Mathe","Dyskalkulie"], teacherId: 4, locationId: "neuss-i", focus: "Dyskalkulie", since: "Okt 2024", notes: "Mengenverstaendnis waechst." },
+  { id: 9,  name: "Jonas Klein",    short: "JK", grade: 9,  subjects: ["Mathe"],           teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Sep 2024", notes: "Stochastik verbessert." },
+  { id: 10, name: "Lukas Fischer",  short: "LF", grade: 8,  subjects: ["Chemie"],          teacherId: 5, locationId: "neuss-i", focus: "Klausur-Prep",     since: "Nov 2024", notes: "Organische Chemie schwierig." },
+  { id: 11, name: "Nele Wagner",    short: "NW", grade: 9,  subjects: ["Mathe"],           teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Mär 2025", notes: "Sehr ehrgeizig." },
+  { id: 12, name: "Emma Schaefer",  short: "ES", grade: 3,  subjects: ["Vorschule"],       teacherId: 6, locationId: "neuss-f", focus: "Schulstart",       since: "Mär 2025", notes: "Sehr fleissig." },
+  { id: 13, name: "Felix Richter",  short: "FR", grade: 12, subjects: ["Mathe"],           teacherId: 4, locationId: "neuss-f", focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Auf Kurs." },
 ];
 
 // status: scheduled | checked-in | completed
 // completedDur in min, only set when checked out
 const INITIAL_APPOINTMENTS = [
-  // Today, Sarah
-  { id: 101, day: 2, date: "29.04.", time: "14:00", plannedDur: 45, studentId: 2, teacherId: 1, subject: "Englisch + LRS", room: "Raum 1", status: "completed", completedDur: 45, notes: "Lesetraining gemacht.", checkedInAt: "13:58", checkedOutAt: "14:43", billed: false },
-  { id: 102, day: 2, date: "29.04.", time: "15:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "checked-in", completedDur: null, notes: "", checkedInAt: "14:58", checkedOutAt: null, billed: false },
-  { id: 103, day: 2, date: "29.04.", time: "16:30", plannedDur: 60, studentId: 3, teacherId: 1, subject: "Englisch", room: "Raum 2", status: "scheduled", completedDur: null, notes: "", billed: false },
-  { id: 104, day: 2, date: "29.04.", time: "17:45", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "scheduled", completedDur: null, notes: "", billed: false },
-  // Earlier this week, Sarah
-  { id: 110, day: 0, date: "27.04.", time: "15:00", plannedDur: 60, studentId: 5, teacherId: 1, subject: "Englisch", room: "Raum 1", status: "completed", completedDur: 60, notes: "Vocabulary-Test bestanden.", checkedInAt: "14:55", checkedOutAt: "15:55", billed: false },
-  { id: 111, day: 0, date: "27.04.", time: "16:30", plannedDur: 60, studentId: 6, teacherId: 1, subject: "Englisch", room: "Raum 2", status: "completed", completedDur: 65, notes: "Diskussion Climate Change.", checkedInAt: "16:28", checkedOutAt: "17:33", billed: false },
-  { id: 112, day: 1, date: "28.04.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "completed", completedDur: 60, notes: "Erörterung geübt.", checkedInAt: "14:00", checkedOutAt: "15:00", billed: false },
-  { id: 113, day: 1, date: "28.04.", time: "16:00", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "completed", completedDur: 55, notes: "ZAP-Probeklausur korrigiert.", checkedInAt: "16:02", checkedOutAt: "16:57", billed: false },
-  // Other teachers — today
-  { id: 201, day: 2, date: "29.04.", time: "14:00", plannedDur: 60, studentId: 7, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "checked-in", completedDur: null, notes: "", checkedInAt: "14:01", billed: false },
-  { id: 202, day: 2, date: "29.04.", time: "15:30", plannedDur: 60, studentId: 10, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "scheduled", billed: false },
-  { id: 203, day: 2, date: "29.04.", time: "16:30", plannedDur: 60, studentId: 11, teacherId: 2, subject: "Physik", room: "Raum 4", status: "scheduled", billed: false },
-  { id: 301, day: 2, date: "29.04.", time: "14:30", plannedDur: 45, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "completed", completedDur: 50, notes: "Bruchrechnen vertieft.", checkedInAt: "14:30", checkedOutAt: "15:20", billed: false },
-  { id: 302, day: 2, date: "29.04.", time: "15:30", plannedDur: 60, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "scheduled", billed: false },
-  { id: 401, day: 2, date: "29.04.", time: "15:00", plannedDur: 60, studentId: 9, teacherId: 4, subject: "Französisch", room: "Raum 5", status: "checked-in", completedDur: null, notes: "", checkedInAt: "15:00", billed: false },
-  // Earlier this month — for billing demo (already billed last month, fresh this month)
-  { id: 501, day: -1, date: "22.04.", time: "15:00", plannedDur: 60, studentId: 5, teacherId: 1, subject: "Englisch", room: "Raum 1", status: "completed", completedDur: 60, notes: "Reading.", billed: false },
-  { id: 502, day: -1, date: "22.04.", time: "16:30", plannedDur: 60, studentId: 6, teacherId: 1, subject: "Englisch", room: "Raum 2", status: "completed", completedDur: 60, notes: "Speaking.", billed: false },
-  { id: 503, day: -1, date: "23.04.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "completed", completedDur: 60, notes: "", billed: false },
-  { id: 504, day: -1, date: "23.04.", time: "15:00", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "completed", completedDur: 60, notes: "", billed: false },
-  { id: 510, day: -1, date: "21.04.", time: "14:00", plannedDur: 60, studentId: 7, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "completed", completedDur: 60, notes: "", billed: false },
-  { id: 511, day: -1, date: "22.04.", time: "16:00", plannedDur: 60, studentId: 10, teacherId: 2, subject: "Mathe", room: "Raum 3", status: "completed", completedDur: 60, notes: "", billed: false },
-  { id: 512, day: -1, date: "23.04.", time: "16:30", plannedDur: 60, studentId: 11, teacherId: 2, subject: "Physik", room: "Raum 4", status: "completed", completedDur: 60, notes: "", billed: false },
-  { id: 520, day: -1, date: "22.04.", time: "14:30", plannedDur: 45, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "completed", completedDur: 45, notes: "", billed: false },
-  { id: 521, day: -1, date: "24.04.", time: "15:00", plannedDur: 60, studentId: 8, teacherId: 3, subject: "Mathe", room: "Raum 2", status: "completed", completedDur: 60, notes: "", billed: false },
-  { id: 530, day: -1, date: "23.04.", time: "15:00", plannedDur: 60, studentId: 9, teacherId: 4, subject: "Französisch", room: "Raum 5", status: "completed", completedDur: 60, notes: "", billed: false },
-  // March (already billed)
-  { id: 601, day: -2, date: "15.03.", time: "15:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Deutsch", room: "Raum 1", status: "completed", completedDur: 60, notes: "", billed: true, billedMonth: "März" },
-  { id: 602, day: -2, date: "16.03.", time: "16:00", plannedDur: 60, studentId: 4, teacherId: 1, subject: "Deutsch", room: "Raum 2", status: "completed", completedDur: 60, notes: "", billed: true, billedMonth: "März" },
+  { id: 101, day: 0, date: "08.06.", time: "14:00", plannedDur: 60, studentId: 2, teacherId: 2, subject: "Deutsch / LRS", room: "Raum 1", locationId: "heerdt",  status: "completed", completedDur: 60, notes: "Lesetraining super.", checkedInAt: "13:58", checkedOutAt: "14:58", billed: false, dateKey: "2026-06-08" },
+  { id: 102, day: 0, date: "08.06.", time: "15:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Mathe",        room: "Raum 2", locationId: "heerdt",  status: "checked-in", completedDur: null, notes: "", checkedInAt: "14:57", billed: false, dateKey: "2026-06-08", _checkedInTs: null },
+  { id: 103, day: 0, date: "08.06.", time: "16:00", plannedDur: 60, studentId: 3, teacherId: 1, subject: "Physik",       room: "Raum 1", locationId: "heerdt",  status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 201, day: 0, date: "08.06.", time: "14:30", plannedDur: 60, studentId: 5, teacherId: 3, subject: "Englisch",     room: "Raum 1", locationId: "garath",  status: "completed", completedDur: 60, notes: "", checkedInAt: "14:30", checkedOutAt: "15:30", billed: false, dateKey: "2026-06-08" },
+  { id: 202, day: 0, date: "08.06.", time: "15:30", plannedDur: 60, studentId: 7, teacherId: 3, subject: "DaZ",          room: "Raum 2", locationId: "garath",  status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 301, day: 0, date: "08.06.", time: "15:00", plannedDur: 60, studentId: 8, teacherId: 4, subject: "Dyskalkulie",  room: "Raum 1", locationId: "neuss-i", status: "completed", completedDur: 60, notes: "", checkedInAt: "15:01", checkedOutAt: "16:01", billed: false, dateKey: "2026-06-08" },
+  { id: 302, day: 0, date: "08.06.", time: "16:30", plannedDur: 60, studentId: 10,teacherId: 5, subject: "Chemie",       room: "Raum 2", locationId: "neuss-i", status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 401, day: 0, date: "08.06.", time: "14:00", plannedDur: 60, studentId: 12,teacherId: 6, subject: "Vorschule",    room: "Raum 1", locationId: "neuss-f", status: "completed", completedDur: 60, notes: "", checkedInAt: "14:00", checkedOutAt: "15:00", billed: false, dateKey: "2026-06-08" },
+  { id: 402, day: 0, date: "08.06.", time: "17:00", plannedDur: 60, studentId: 13,teacherId: 4, subject: "Mathe",        room: "Raum 2", locationId: "neuss-f", status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
+  // Vorwoche — abrechenbar
+  { id: 501, day: 0, date: "02.06.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Mathe",    room: "Raum 1", locationId: "heerdt",  status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-02" },
+  { id: 502, day: 0, date: "02.06.", time: "15:00", plannedDur: 60, studentId: 2, teacherId: 2, subject: "Deutsch",  room: "Raum 2", locationId: "heerdt",  status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-02" },
+  { id: 503, day: 1, date: "03.06.", time: "14:30", plannedDur: 60, studentId: 5, teacherId: 3, subject: "Englisch", room: "Raum 1", locationId: "garath",  status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-03" },
+  { id: 504, day: 1, date: "03.06.", time: "15:00", plannedDur: 60, studentId: 8, teacherId: 4, subject: "Mathe",    room: "Raum 1", locationId: "neuss-i", status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-03" },
 ];
 
 // Schedule slots — the new admin-created weekly plan
 // Each slot: who teaches whom, where, when (60 min duration)
 // type: "einzel" | "gruppe"
 const INITIAL_SCHEDULE_SLOTS = [
-  // Heerdt — Montag
-  { id: "s001", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1, 3], type: "gruppe", notes: "" },
-  { id: "s002", day: 0, time: "15:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [2],    type: "einzel", notes: "" },
-  { id: "s003", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h2", teacherId: 2, studentIds: [4],    type: "einzel", notes: "" },
-  // Garath — Montag
-  { id: "s004", day: 0, time: "14:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5, 6], type: "gruppe", notes: "" },
+  // Heerdt — Mo
+  { id: "s001", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1,3],  type: "gruppe", notes: "" },
+  { id: "s002", day: 0, time: "15:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [3],    type: "einzel", notes: "" },
+  { id: "s003", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h2", teacherId: 2, studentIds: [2,4],  type: "gruppe", notes: "" },
+  // Garath — Mo
+  { id: "s004", day: 0, time: "14:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5,6],  type: "gruppe", notes: "" },
   { id: "s005", day: 0, time: "16:00", locationId: "garath",  roomId: "g2", teacherId: 3, studentIds: [7],    type: "einzel", notes: "" },
-  // Neuss-I — Montag
-  { id: "s006", day: 0, time: "15:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8, 9], type: "gruppe", notes: "" },
+  // Neuss-I — Mo
+  { id: "s006", day: 0, time: "15:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8,9],  type: "gruppe", notes: "" },
   { id: "s007", day: 0, time: "16:30", locationId: "neuss-i", roomId: "n2", teacherId: 5, studentIds: [10],   type: "einzel", notes: "" },
-  // Neuss-F — Montag
+  // Neuss-F — Mo
   { id: "s008", day: 0, time: "14:00", locationId: "neuss-f", roomId: "f1", teacherId: 6, studentIds: [12],   type: "einzel", notes: "" },
   { id: "s009", day: 0, time: "15:30", locationId: "neuss-f", roomId: "f2", teacherId: 4, studentIds: [13],   type: "einzel", notes: "" },
-  // Dienstag
+  // Di
   { id: "s010", day: 1, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1],    type: "einzel", notes: "" },
-  { id: "s011", day: 1, time: "15:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [6],    type: "einzel", notes: "" },
+  { id: "s011", day: 1, time: "14:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5],    type: "einzel", notes: "" },
   { id: "s012", day: 1, time: "14:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [9,11], type: "gruppe", notes: "" },
-  // Mittwoch
-  { id: "s013", day: 2, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 2, studentIds: [2, 4], type: "gruppe", notes: "" },
-  { id: "s014", day: 2, time: "15:00", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5],    type: "einzel", notes: "" },
+  // Mi
+  { id: "s013", day: 2, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 2, studentIds: [2,4],  type: "gruppe", notes: "" },
+  { id: "s014", day: 2, time: "15:00", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [6],    type: "einzel", notes: "" },
   { id: "s015", day: 2, time: "16:00", locationId: "neuss-i", roomId: "n2", teacherId: 5, studentIds: [10],   type: "einzel", notes: "" },
   { id: "s016", day: 2, time: "14:30", locationId: "neuss-f", roomId: "f1", teacherId: 6, studentIds: [12],   type: "einzel", notes: "" },
-  // Donnerstag
+  // Do
   { id: "s017", day: 3, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [3],    type: "einzel", notes: "" },
   { id: "s018", day: 3, time: "15:30", locationId: "garath",  roomId: "g2", teacherId: 3, studentIds: [7],    type: "einzel", notes: "" },
   { id: "s019", day: 3, time: "17:00", locationId: "neuss-f", roomId: "f2", teacherId: 4, studentIds: [13],   type: "einzel", notes: "" },
-  // Freitag
-  { id: "s020", day: 4, time: "14:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1, 3], type: "gruppe", notes: "" },
+  // Fr
+  { id: "s020", day: 4, time: "14:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1,3],  type: "gruppe", notes: "" },
   { id: "s021", day: 4, time: "16:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8],    type: "einzel", notes: "" },
 ];
 
@@ -252,16 +234,11 @@ const billingLogFromDB = (r) => {
 };
 const EMPTY_STUDENT_DRAFT = { name: "", grade: "", subjects: [], focus: "", notes: "", teacherId: null };
 
-function makeStore(teachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots) {
+function makeStore(teachers, setTeachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots) {
   const studentById = (id) => students.find(s => s.id === id);
   const teacherById = (id) => teachers.find(t => t.id === id);
-
-  const subjectForSlot = (slot) => {
-    const t = teachers.find(x => x.id === slot.teacherId);
-    return t?.subjects?.[0] || "Nachhilfe";
-  };
-  const roomNameForSlot = (slot) =>
-    ROOMS_BY_LOCATION[slot.locationId]?.find(r => r.id === slot.roomId)?.name || "Raum";
+  const subjectForSlot = (slot) => { const t = teachers.find(x => x.id === slot.teacherId); return t?.subjects?.[0] || "Nachhilfe"; };
+  const roomNameForSlot = (slot) => ROOMS_BY_LOCATION[slot.locationId]?.find(r => r.id === slot.roomId)?.name || "Raum";
 
   const buildSlotLesson = (slot, dk) => {
     const [y, m, d] = dk.split("-").map(Number);
@@ -270,195 +247,145 @@ function makeStore(teachers, students, setStudents, appointments, setAppointment
     const single = studentObjs.length === 1 ? studentObjs[0] : null;
     const subject = single ? (single.subjects?.length ? single.subjects.join(" · ") : subjectForSlot(slot)) : null;
     const base = {
-      id: `${slot.id}|${dk}`,
-      slotId: slot.id, dateKey: dk, teacherId: slot.teacherId,
-      day: slot.day,
+      id: `${slot.id}|${dk}`, slotId: slot.id, dateKey: dk, teacherId: slot.teacherId, day: slot.day,
       date: dateObj.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" }),
-      time: slot.time, plannedDur: COURSE_DURATION,
-      room: roomNameForSlot(slot), type: slot.type,
-      studentIds: slot.studentIds, students: studentObjs, subject,
-      status: "scheduled", notes: slot.notes || "",
+      time: slot.time, plannedDur: COURSE_DURATION, room: roomNameForSlot(slot), type: slot.type,
+      studentIds: slot.studentIds, students: studentObjs, subject, status: "scheduled", notes: slot.notes || "",
     };
     const existing = appointments.find(a => a.slotId === slot.id && a.dateKey === dk);
     return existing ? { ...base, ...existing, studentIds: slot.studentIds, students: studentObjs, subject } : base;
   };
 
   const lessonsForDate = (tid, dateObj) => {
-    const wd = appDayFromJS(dateObj);
-    const dk = isoDateKey(dateObj);
-    return scheduleSlots
-      .filter(s => s.teacherId === tid && ((!s.onDate && s.day === wd) || s.onDate === dk))
-      .map(slot => buildSlotLesson(slot, dk))
-      .sort((a, b) => a.time.localeCompare(b.time));
+    const wd = appDayFromJS(dateObj); const dk = isoDateKey(dateObj);
+    return scheduleSlots.filter(s => s.teacherId === tid && ((!s.onDate && s.day === wd) || s.onDate === dk))
+      .map(slot => buildSlotLesson(slot, dk)).sort((a, b) => a.time.localeCompare(b.time));
   };
-
   const aptsForToday = (tid) => lessonsForDate(tid, new Date());
   const aptsForWeek = (tid) => {
-    const mon = mondayOf(new Date());
-    const out = [];
-    for (let i = 0; i < 5; i++) {
-      const d = new Date(mon); d.setDate(mon.getDate() + i);
-      out.push(...lessonsForDate(tid, d));
-    }
+    const mon = mondayOf(new Date()); const out = [];
+    for (let i = 0; i < 5; i++) { const d = new Date(mon); d.setDate(mon.getDate() + i); out.push(...lessonsForDate(tid, d)); }
     return out;
   };
   const aptsAllToday = () => {
-    const dt = new Date();
-    const wd = appDayFromJS(dt);
-    const dk = isoDateKey(dt);
-    return scheduleSlots
-      .filter(s => (!s.onDate && s.day === wd) || s.onDate === dk)
-      .map(slot => buildSlotLesson(slot, dk))
-      .sort((a, b) => a.time.localeCompare(b.time));
+    const dt = new Date(); const wd = appDayFromJS(dt); const dk = isoDateKey(dt);
+    return scheduleSlots.filter(s => (!s.onDate && s.day === wd) || s.onDate === dk)
+      .map(slot => buildSlotLesson(slot, dk)).sort((a, b) => a.time.localeCompare(b.time));
   };
   const lessonsForDateAll = (dateObj) => {
-    const wd = appDayFromJS(dateObj);
-    const dk = isoDateKey(dateObj);
-    return scheduleSlots
-      .filter(s => (!s.onDate && s.day === wd) || s.onDate === dk)
-      .map(slot => buildSlotLesson(slot, dk))
-      .sort((a, b) => a.time.localeCompare(b.time));
+    const wd = appDayFromJS(dateObj); const dk = isoDateKey(dateObj);
+    return scheduleSlots.filter(s => (!s.onDate && s.day === wd) || s.onDate === dk)
+      .map(slot => buildSlotLesson(slot, dk)).sort((a, b) => a.time.localeCompare(b.time));
   };
   const lessonById = (id) => {
     const mat = appointments.find(a => a.id === id);
-    if (mat) {
-      const slot = scheduleSlots.find(s => s.id === mat.slotId);
-      if (slot) return buildSlotLesson(slot, mat.dateKey);
-      return mat;
-    }
-    const [slotId, dk] = id.split("|");
-    const slot = scheduleSlots.find(s => s.id === slotId);
-    if (!slot) return null;
-    return buildSlotLesson(slot, dk);
+    if (mat) { const slot = scheduleSlots.find(s => s.id === mat.slotId); if (slot) return buildSlotLesson(slot, mat.dateKey); return mat; }
+    const [slotId, dk] = id.split("|"); const slot = scheduleSlots.find(s => s.id === slotId);
+    if (!slot) return null; return buildSlotLesson(slot, dk);
   };
-
-  const openHoursForTeacher = (tid) =>
-    appointments.filter(a => a.teacherId === tid && a.status === "completed" && !a.billed);
-  const billedHoursForTeacher = (tid, month) =>
-    appointments.filter(a => a.teacherId === tid && a.status === "completed" && a.billed && (!month || a.billedMonth === month));
+  const openHoursForTeacher = (tid) => appointments.filter(a => a.teacherId === tid && a.status === "completed" && !a.billed);
+  const billedHoursForTeacher = (tid, month) => appointments.filter(a => a.teacherId === tid && a.status === "completed" && a.billed && (!month || a.billedMonth === month));
   const auditForTeacher = (tid) => billingLog.filter(e => e.teacherId === tid).sort((a,b) => b.timestamp - a.timestamp);
-  const slotsForDayLoc = (day, locationId) =>
-    scheduleSlots.filter(s => s.day === day && s.locationId === locationId && !s.onDate);
+  const slotsForDayLoc = (day, locationId) => scheduleSlots.filter(s => s.day === day && s.locationId === locationId && !s.onDate);
   const slotsForDateLoc = (dateObj, locationId) => {
-    const wd = appDayFromJS(dateObj);
-    const dk = isoDateKey(dateObj);
+    const wd = appDayFromJS(dateObj); const dk = isoDateKey(dateObj);
     return scheduleSlots.filter(s => s.locationId === locationId && ((!s.onDate && s.day === wd) || s.onDate === dk));
   };
 
   return {
     teachers, students, appointments, billingLog, scheduleSlots,
-    studentById, teacherById,
-    aptsForToday, aptsForWeek, aptsAllToday, lessonsForDateAll, lessonById,
-    openHoursForTeacher, billedHoursForTeacher, auditForTeacher,
-    slotsForDayLoc, slotsForDateLoc,
+    studentById, teacherById, aptsForToday, aptsForWeek, aptsAllToday,
+    lessonsForDateAll, lessonById, openHoursForTeacher, billedHoursForTeacher,
+    auditForTeacher, slotsForDayLoc, slotsForDateLoc,
 
-    // DEMO: pure state mutations (no Supabase)
     addStudent: (data) => {
       const id = Date.now();
-      const short = (data.name || "?").split(" ").filter(Boolean).map(p => p[0]).join("").slice(0, 2).toUpperCase() || "??";
-      const student = { id, name: data.name || "Neuer Schueler", short, grade: data.grade || 1, subjects: data.subjects || [], teacherId: data.teacherId ?? null, focus: data.focus || "Neu", notes: data.notes || "", since: new Date().toLocaleDateString("de-DE", { month: "short", year: "numeric" }), locationId: data.locationId || LOCATIONS[0].id };
-      setStudents(prev => [...prev, student]);
+      const short = (data.name||"?").split(" ").filter(Boolean).map(p=>p[0]).join("").slice(0,2).toUpperCase()||"??";
+      setStudents(prev => [...prev, { id, name: data.name||"Neuer Schueler", short, grade: data.grade||1, subjects: data.subjects||[], teacherId: data.teacherId??null, focus: data.focus||"Neu", notes: data.notes||"", since: new Date().toLocaleDateString("de-DE",{month:"short",year:"numeric"}), locationId: data.locationId||LOCATIONS[0].id }]);
       return id;
     },
     updateStudent: (sid, patch) => {
       setStudents(prev => prev.map(s => {
         if (s.id !== sid) return s;
-        const updated = { ...s, ...patch };
-        if (patch.name) updated.short = patch.name.split(" ").filter(Boolean).map(p => p[0]).join("").slice(0, 2).toUpperCase() || "??";
-        return updated;
+        const u = { ...s, ...patch };
+        if (patch.name) u.short = patch.name.split(" ").filter(Boolean).map(p=>p[0]).join("").slice(0,2).toUpperCase()||"??";
+        return u;
       }));
     },
     removeStudent: (sid) => { setStudents(prev => prev.filter(s => s.id !== sid)); },
     assignStudent: (sid, tid) => { setStudents(prev => prev.map(s => s.id === sid ? { ...s, teacherId: tid } : s)); },
-
+    updateTeacher: (tid, patch) => {
+      setTeachers(prev => prev.map(t => {
+        if (t.id !== tid) return t;
+        const u = { ...t, ...patch };
+        if (patch.name) u.short = patch.name.split(" ").filter(Boolean).map(p=>p[0]).join("").slice(0,2).toUpperCase()||"??";
+        return u;
+      }));
+      return Promise.resolve(true);
+    },
     checkIn: (lesson) => {
       const now = new Date();
-      const apt = { id: `apt_${Date.now()}`, slotId: lesson.slotId, dateKey: lesson.dateKey, day: lesson.day, date: lesson.date, time: lesson.time, teacherId: lesson.teacherId, roomId: scheduleSlots.find(s => s.id === lesson.slotId)?.roomId || null, studentIds: lesson.studentIds || [], plannedDur: lesson.plannedDur || 60, status: "checked-in", checkedInAt: hhmm(now), checkedOutAt: null, completedDur: null, _checkedInTs: now.getTime(), heldMethod: "live", notes: lesson.notes || "", billed: false, billedMonth: null };
-      setAppointments(prev => [...prev, apt]);
+      setAppointments(prev => [...prev, { id: `apt_${Date.now()}`, slotId: lesson.slotId, dateKey: lesson.dateKey, day: lesson.day, date: lesson.date, time: lesson.time, teacherId: lesson.teacherId, studentIds: lesson.studentIds||[], students: lesson.students||[], plannedDur: lesson.plannedDur||60, status: "checked-in", checkedInAt: hhmm(now), checkedOutAt: null, completedDur: null, _checkedInTs: now.getTime(), heldMethod: "live", notes: lesson.notes||"", billed: false, subject: lesson.subject }]);
     },
     checkOut: (aptId, notes) => {
       const now = new Date();
-      setAppointments(prev => prev.map(a => a.id === aptId ? { ...a, status: "completed", checkedOutAt: hhmm(now), completedDur: a.plannedDur || 60, notes: notes || a.notes } : a));
+      setAppointments(prev => prev.map(a => a.id === aptId ? { ...a, status: "completed", checkedOutAt: hhmm(now), completedDur: a.plannedDur||60, notes: notes||a.notes } : a));
     },
     revertLesson: (aptId) => { setAppointments(prev => prev.filter(a => a.id !== aptId)); },
     confirmHeld: (lesson, notes) => {
       const start = new Date(`${lesson.dateKey}T${lesson.time}:00`);
-      const dur = lesson.plannedDur || 60;
-      const end = new Date(start.getTime() + dur * 60000);
+      const dur = lesson.plannedDur||60;
+      const end = new Date(start.getTime() + dur*60000);
       const existing = appointments.find(a => a.slotId === lesson.slotId && a.dateKey === lesson.dateKey);
-      if (existing) {
-        setAppointments(prev => prev.map(a => a.id === existing.id ? { ...a, status: "completed", checkedOutAt: hhmm(end), completedDur: dur, heldMethod: a.heldMethod || "confirmed", notes: notes || a.notes } : a));
-        return;
-      }
-      const apt = { id: `apt_${Date.now()}`, slotId: lesson.slotId, dateKey: lesson.dateKey, day: lesson.day, date: lesson.date, time: lesson.time, teacherId: lesson.teacherId, studentIds: lesson.studentIds || [], plannedDur: dur, status: "completed", checkedInAt: hhmm(start), checkedOutAt: hhmm(end), completedDur: dur, _checkedInTs: start.getTime(), heldMethod: "confirmed", notes: notes || "", billed: false, billedMonth: null };
-      setAppointments(prev => [...prev, apt]);
+      if (existing) { setAppointments(prev => prev.map(a => a.id === existing.id ? { ...a, status: "completed", checkedOutAt: hhmm(end), completedDur: dur, heldMethod: "confirmed", notes: notes||a.notes } : a)); return; }
+      setAppointments(prev => [...prev, { id: `apt_${Date.now()}`, slotId: lesson.slotId, dateKey: lesson.dateKey, day: lesson.day, date: lesson.date, time: lesson.time, teacherId: lesson.teacherId, studentIds: lesson.studentIds||[], students: lesson.students||[], plannedDur: dur, status: "completed", checkedInAt: hhmm(start), checkedOutAt: hhmm(end), completedDur: dur, _checkedInTs: start.getTime(), heldMethod: "confirmed", notes: notes||"", billed: false, subject: lesson.subject }]);
     },
     confirmManyHeld: (lessons) => {
       const toInsert = lessons.filter(l => !appointments.find(a => a.slotId === l.slotId && a.dateKey === l.dateKey));
       if (!toInsert.length) return;
-      const newApts = toInsert.map(l => {
-        const start = new Date(`${l.dateKey}T${l.time}:00`);
-        const dur = l.plannedDur || 60;
-        const end = new Date(start.getTime() + dur * 60000);
-        return { id: `apt_${Date.now()}_${l.slotId}`, slotId: l.slotId, dateKey: l.dateKey, day: l.day, date: l.date, time: l.time, teacherId: l.teacherId, studentIds: l.studentIds || [], plannedDur: dur, status: "completed", checkedInAt: hhmm(start), checkedOutAt: hhmm(end), completedDur: dur, _checkedInTs: start.getTime(), heldMethod: "confirmed", notes: "", billed: false };
-      });
-      setAppointments(prev => [...prev, ...newApts]);
+      setAppointments(prev => [...prev, ...toInsert.map(l => {
+        const start = new Date(`${l.dateKey}T${l.time}:00`); const dur = l.plannedDur||60; const end = new Date(start.getTime()+dur*60000);
+        return { id: `apt_${Date.now()}_${l.slotId}`, slotId: l.slotId, dateKey: l.dateKey, day: l.day, date: l.date, time: l.time, teacherId: l.teacherId, studentIds: l.studentIds||[], students: l.students||[], plannedDur: dur, status: "completed", checkedInAt: hhmm(start), checkedOutAt: hhmm(end), completedDur: dur, _checkedInTs: start.getTime(), heldMethod: "confirmed", notes: "", billed: false };
+      })]);
     },
     markAsBilled: (teacherId, month, billedBy) => {
-      const now = new Date();
-      const teacher = teachers.find(t => t.id === teacherId);
+      const now = new Date(); const teacher = teachers.find(t => t.id === teacherId);
       const open = appointments.filter(a => a.teacherId === teacherId && a.status === "completed" && !a.billed);
       if (!open.length) return;
-      const hours = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
-      const cost = hours * (teacher?.rate || 0);
-      const ids = open.map(a => a.id);
+      const hours = open.reduce((s,a) => s+(a.completedDur||0)/60, 0);
+      const cost = hours*(teacher?.rate||0); const ids = open.map(a => a.id);
       setAppointments(prev => prev.map(a => ids.includes(a.id) ? { ...a, billed: true, billedMonth: month, billedBy } : a));
-      setBillingLog(prev => [...prev, { id: Date.now(), teacherId, teacherName: teacher?.name, month, hours, cost, billedBy, timestamp: now.getTime(), formatted: now.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) }]);
+      const entry = { id: Date.now(), teacherId, teacherName: teacher?.name, month, hours, cost, billedBy, timestamp: now.getTime(), formatted: now.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+" · "+now.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) };
+      setBillingLog(prev => [...prev, entry]);
     },
     exportCSV: (teacherId) => {
-      const t = teachers.find(x => x.id === teacherId);
-      if (!t) return;
+      const t = teachers.find(x => x.id === teacherId); if (!t) return;
       const open = appointments.filter(a => a.teacherId === teacherId && a.status === "completed" && !a.billed);
       if (!open.length) return;
-      const byDay = {};
-      open.forEach(a => { const dk = a.dateKey || ""; byDay[dk] = (byDay[dk] || 0) + (a.completedDur || 0); });
+      const byDay = {}; open.forEach(a => { byDay[a.dateKey||""] = (byDay[a.dateKey||""]||0)+(a.completedDur||0); });
       const days = Object.keys(byDay).filter(Boolean).sort();
-      const wdShort = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-      const totalMin = days.reduce((s, dk) => s + byDay[dk], 0);
-      const totalHrs = totalMin / 60;
-      const rateStr = t.rate.toFixed(2).replace(".", ",");
-      const monthRef = days.length ? new Date(days[0] + "T00:00:00").toLocaleDateString("de-DE", { month: "long", year: "numeric" }) : "";
-      const rows = [
-        ["Leistungsnachweis", t.name], ["Zeitraum", monthRef], ["Stundensatz", rateStr], [],
-        ["Datum","Wochentag","Stunden","Stundensatz","Betrag"],
-        ...days.map(dk => { const hrs = byDay[dk]/60; const wd = wdShort[new Date(dk+"T00:00:00").getDay()]; return [dk, wd, hrs.toFixed(2).replace(".",","), rateStr, (hrs*t.rate).toFixed(2).replace(".",",")]; }),
-        [], ["Summe","",totalHrs.toFixed(2).replace(".",","),"",(totalHrs*t.rate).toFixed(2).replace(".",",")],
-      ];
-      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(";")).join("\r\n");
-      const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const wdS = ["So","Mo","Di","Mi","Do","Fr","Sa"]; const totalMin = days.reduce((s,dk)=>s+byDay[dk],0);
+      const totalHrs = totalMin/60; const rateStr = t.rate.toFixed(2).replace(".",",");
+      const rows = [["Leistungsnachweis",t.name],["Zeitraum",days[0]||""],["Stundensatz",rateStr],[],["Datum","Wochentag","Stunden","Satz","Betrag"],...days.map(dk=>{const hrs=byDay[dk]/60;return[dk,wdS[new Date(dk+"T00:00:00").getDay()],hrs.toFixed(2).replace(".",","),rateStr,(hrs*t.rate).toFixed(2).replace(".",",")];}),[], ["Summe","",totalHrs.toFixed(2).replace(".",","),"",(totalHrs*t.rate).toFixed(2).replace(".",",")]];
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+      const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob); const link = document.createElement("a");
       link.href = url; link.download = `leistungsnachweis_${t.name.replace(/\s+/g,"_")}.csv`;
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
     },
     saveSlot: (slotData) => {
       if (slotData.id && scheduleSlots.find(s => s.id === slotData.id)) {
         setScheduleSlots(prev => prev.map(s => s.id === slotData.id ? { ...s, ...slotData } : s));
       } else {
-        const id = slotData.id || `slot_${Date.now()}`;
-        setScheduleSlots(prev => [...prev, { ...slotData, id }]);
+        setScheduleSlots(prev => [...prev, { ...slotData, id: slotData.id||`slot_${Date.now()}` }]);
       }
     },
     removeSlot: (slotId) => { setScheduleSlots(prev => prev.filter(s => s.id !== slotId)); },
     copyDayToDay: (fromDay, toDay, locationId) => {
       const source = scheduleSlots.filter(s => s.day === fromDay && s.locationId === locationId && !s.onDate);
-      const newSlots = source.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}`, day: toDay }));
-      setScheduleSlots(prev => [...prev.filter(s => !(s.day === toDay && s.locationId === locationId && !s.onDate)), ...newSlots]);
+      setScheduleSlots(prev => [...prev.filter(s => !(s.day === toDay && s.locationId === locationId && !s.onDate)), ...source.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}`, day: toDay }))]);
     },
-    clearDay: (day, locationId) => {
-      setScheduleSlots(prev => prev.filter(s => !(s.day === day && s.locationId === locationId && !s.onDate)));
-    },
+    clearDay: (day, locationId) => { setScheduleSlots(prev => prev.filter(s => !(s.day === day && s.locationId === locationId && !s.onDate))); },
   };
 }
 
@@ -553,7 +480,7 @@ function AppHeader({ user, onLogout }) {
   return (
     <div style={{ padding: "8px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}`, background: C.bgGrad, flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 14, fontFamily: FF.display }}>B</div>
+        <img src="/bendias-logo-final.png" alt="Bendias" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }}/>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi, lineHeight: 1.1 }}>{user.name}</div>
           <div style={{ fontSize: 10, color: isAdmin ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, display: "flex", alignItems: "center", gap: 4 }}>
@@ -624,11 +551,11 @@ function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
       fontFamily: FF.body,
     }}>
       {/* Logo & brand */}
-      <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 11, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 16, fontFamily: FF.display }}>B</div>
+      <div style={{ padding: "20px 20px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
+        <img src="/bendias-logo-final.png" alt="Bendias" style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8 }}/>
         <div>
-          <div style={{ fontFamily: FF.display, fontSize: 17, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Bendias</div>
-          <div style={{ fontSize: 10, color: C.textDim, letterSpacing: 1.4, fontWeight: 700, marginTop: 3 }}>MITARBEITER</div>
+          <div style={{ fontFamily: FF.display, fontSize: 17, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Lernwelt</div>
+          <div style={{ fontSize: 10, color: C.textDim, letterSpacing: 1.4, fontWeight: 700, marginTop: 3 }}>VERWALTUNG</div>
         </div>
       </div>
 
@@ -656,7 +583,7 @@ function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
 
       {/* User card at bottom */}
       <div style={{ padding: "14px 16px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
-        <Avatar user={user} size={36}/>
+        <Avatar short={user.short || (user.name || "?").split(" ").map(p=>p[0]).join("").slice(0,2).toUpperCase()} color={user.color || C.primary} size={36}/>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.textHi, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</div>
           <div style={{ fontSize: 10, color: user.role === "admin" ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>
@@ -689,19 +616,28 @@ function PhoneFrame({ children, isMobile }) {
   );
 }
 
-/* LOGIN — Demo Rollenauswahl */
+/* LOGIN — with role picker */
+/* LOGIN — Demo mit E-Mail + Autocomplete */
 function Login({ onLogin }) {
-  const [selected, setSelected] = React.useState(DEMO_USERS[0]);
-  const [showPw, setShowPw] = React.useState(false);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [showSugg, setShowSugg] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const filtered = DEMO_USERS.filter(u => !email || u.email.toLowerCase().includes(email.toLowerCase()) || u.name.toLowerCase().includes(email.toLowerCase()));
+  const roleLabel = r => r === "admin" ? "Ober-Admin" : r === "loc_admin" ? "Standortleitung" : "Lehrkraft";
+  const roleColor = r => r === "admin" ? C.primary : r === "loc_admin" ? "#D97706" : C.success;
+
+  const select = (u) => { setEmail(u.email); setPassword("demo1234"); setShowSugg(false); setError(""); };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e && e.preventDefault(); setError("");
+    const user = DEMO_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) { setError("E-Mail nicht gefunden — sieh die Vorschläge."); return; }
+    if (password !== user.password) { setError("Falsches Passwort. Demo: demo1234"); return; }
     setLoading(true);
-    setTimeout(() => {
-      const profile = { ...selected, id: selected.id };
-      onLogin(profile);
-    }, 600);
+    setTimeout(() => onLogin({ ...user }), 600);
   };
 
   return (
@@ -714,40 +650,62 @@ function Login({ onLogin }) {
         </div>
       </div>
 
-      <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: "0 0 6px", color: C.textHi, letterSpacing: -0.5 }}>Demo-Zugang</h1>
-      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 22px", lineHeight: 1.5 }}>Wähle eine Rolle um den vollen Funktionsumfang zu erleben.</p>
+      <h1 style={{ fontFamily: FF.display, fontSize: 26, fontWeight: 700, margin: "0 0 6px", color: C.textHi, letterSpacing: -0.5 }}>Anmelden.</h1>
+      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 22px", lineHeight: 1.5 }}>Mit deiner Institut-E-Mail einloggen.</p>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-          {DEMO_USERS.map(u => (
-            <button key={u.id} type="button" onClick={() => setSelected(u)} style={{
-              padding: "12px 14px", borderRadius: 12,
-              background: selected.id === u.id ? "rgba(244,145,86,.12)" : C.surface,
-              border: `1.5px solid ${selected.id === u.id ? C.primary : C.border}`,
-              cursor: "pointer", textAlign: "left", fontFamily: FF.body,
-              display: "flex", alignItems: "center", gap: 12,
-            }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: u.color, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 12, fontFamily: FF.display, flexShrink: 0 }}>{u.short}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: C.textHi }}>{u.name}</div>
-                <div style={{ fontSize: 11, color: C.textDim, marginTop: 1 }}>{u.role === "admin" ? "Administrator · alle Standorte" : "Lehrkraft · " + (TEACHERS.find(t => t.id === u.id)?.subjects?.join(", ") || "")}</div>
-              </div>
-              {selected.id === u.id && <Check size={16} color={C.primary}/>}
-            </button>
-          ))}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ position: "relative" }}>
+          <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>E-Mail Adresse</label>
+          <input type="email" value={email} onChange={e => { setEmail(e.target.value); setShowSugg(true); setError(""); }}
+            onFocus={() => setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 200)}
+            placeholder="name@lernwelt.de" autoComplete="off"
+            style={{ width: "100%", padding: "13px 14px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 14, fontFamily: FF.body, outline: "none", boxSizing: "border-box" }}/>
+          {showSugg && filtered.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
+              {filtered.slice(0,6).map(u => (
+                <button key={u.id} type="button" onMouseDown={() => select(u)} style={{ width: "100%", padding: "10px 14px", background: "transparent", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left", fontFamily: FF.body, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, background: u.color, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: 10, flexShrink: 0 }}>{u.short}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.textHi }}>{u.name}</div>
+                    <div style={{ fontSize: 10, color: C.textDim }}>{u.email}</div>
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: roleColor(u.role), background: roleColor(u.role)+"18", padding: "2px 7px", borderRadius: 5, flexShrink: 0 }}>{roleLabel(u.role)}</div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div style={{ padding: "10px 14px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 10, marginBottom: 16, fontSize: 12, color: C.textDim }}>
-          Passwort: <strong style={{ color: C.textHi }}>demo1234</strong> · gilt für alle Accounts
-        </div>
+        {email && (
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Passwort</label>
+            <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
+              placeholder="••••••••"
+              style={{ width: "100%", padding: "13px 14px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 14, fontFamily: FF.body, outline: "none", boxSizing: "border-box" }}/>
+          </div>
+        )}
 
-        <button type="submit" disabled={loading} style={{ padding: 14, background: C.primaryGrad, border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          {loading ? "Anmelden…" : `Als ${selected.name} einloggen →`}
+        {error && <div style={{ padding: "10px 14px", background: C.danger+"22", border: `1px solid ${C.danger}60`, borderRadius: 10, color: C.danger, fontSize: 13, fontWeight: 600 }}>{error}</div>}
+
+        <button type="submit" disabled={loading || !email || !password} style={{ padding: 14, background: email && password ? C.primaryGrad : C.borderHi, border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: FF.body, cursor: email && password ? "pointer" : "not-allowed", marginTop: 4 }}>
+          {loading ? "Anmelden…" : "Einloggen →"}
         </button>
       </form>
+
+      <div style={{ marginTop: 20, padding: "12px 14px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, marginBottom: 8, letterSpacing: 1 }}>DEMO-ZUGÄNGE</div>
+        {[{l:"Ober-Admin",e:"admin@lernwelt.de"},{l:"Standortleitung Heerdt",e:"heerdt@lernwelt.de"},{l:"Lehrkraft",e:"stolle@lernwelt.de"}].map(x => (
+          <button key={x.e} type="button" onClick={() => select(DEMO_USERS.find(u=>u.email===x.e))} style={{ background:"transparent",border:"none",padding:"3px 0",cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",gap:8,alignItems:"center",width:"100%" }}>
+            <span style={{ fontSize:10, color:C.textVeryDim, minWidth:110 }}>{x.l}:</span>
+            <span style={{ fontSize:11, color:C.primary, fontWeight:600 }}>{x.e}</span>
+          </button>
+        ))}
+        <div style={{ fontSize:10, color:C.textVeryDim, marginTop:6 }}>Passwort: demo1234 (alle Accounts)</div>
+      </div>
     </div>
   );
 }
+
 
 /* TEACHER: APPOINTMENT CARD with check-in/out */
 function Stat({ label, value, color }) {
@@ -1543,11 +1501,40 @@ function AdminTeacherBilling({ teacherId, store, onBack, billedBy }) {
   const audit = store.auditForTeacher(teacherId);
   const openHrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
   const cost = openHrs * t.rate;
-  const [step, setStep] = useState(null); // null | "confirm" | "pin" | "processing"
+  const [step, setStep] = useState(null);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
   const [done, setDone] = useState(false);
   const [csvFeedback, setCsvFeedback] = useState(false);
+
+  // Lehrer bearbeiten
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveOk, setSaveOk] = useState(false);
+  const [eName, setEName] = useState(t.name);
+  const [eEmail, setEEmail] = useState(t.email);
+  const [eRate, setERate] = useState(String(t.rate));
+  const [eSubjects, setESubjects] = useState(t.subjects || []);
+
+  const startEdit = () => {
+    setEName(t.name); setEEmail(t.email);
+    setERate(String(t.rate)); setESubjects(t.subjects || []);
+    setSaveOk(false); setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    setSaving(true);
+    const ok = await store.updateTeacher(t.id, {
+      name: eName, email: eEmail,
+      rate: parseFloat(eRate) || t.rate,
+      subjects: eSubjects,
+    });
+    setSaving(false);
+    if (ok) {
+      setSaveOk(true);
+      setTimeout(() => { setSaveOk(false); setEditing(false); }, 2000);
+    }
+  };
 
   const handleConfirm = () => { setStep("pin"); setPin(""); setPinError(false); };
 
@@ -1591,13 +1578,46 @@ function AdminTeacherBilling({ teacherId, store, onBack, billedBy }) {
         <ArrowLeft size={18}/> <span style={{ fontSize: 14, fontWeight: 600 }}>Zurück</span>
       </button>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
         <Avatar short={t.short} color={t.color} size={56}/>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontFamily: FF.display, fontSize: 22, fontWeight: 700, color: C.textHi, letterSpacing: -0.4, lineHeight: 1.1 }}>{t.name}</div>
           <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{t.email} · {fmtEur(t.rate)}/h</div>
         </div>
+        <button onClick={editing ? () => setEditing(false) : startEdit} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, color: editing ? C.danger : C.text, fontSize: 12, fontWeight: 700, fontFamily: FF.body, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+          <Edit2 size={13}/> {editing ? "Abbrechen" : "Bearbeiten"}
+        </button>
       </div>
+
+      {/* Edit-Formular */}
+      {editing && (
+        <div style={{ background: C.surfaceLo, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: C.primary, fontWeight: 700, letterSpacing: 1.5, marginBottom: 14 }}>LEHRKRAFT BEARBEITEN</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Field label="Name" value={eName} onChange={setEName}/>
+            <Field label="E-Mail" type="email" value={eEmail} onChange={setEEmail}/>
+            <Field label="Stundensatz (€)" type="number" value={eRate} onChange={setERate} placeholder="22"/>
+            <div>
+              <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600, letterSpacing: .3 }}>Fächer</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {ALL_SUBJECTS.map(s => {
+                  const on = eSubjects.includes(s);
+                  return <button key={s} type="button" onClick={() => setESubjects(prev => on ? prev.filter(x=>x!==s) : [...prev,s])} style={{ padding: "5px 10px", borderRadius: 7, border: `1.5px solid ${on ? C.primary : C.border}`, background: on ? C.primary+"22" : C.surfaceLo, color: on ? C.primary : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FF.body }}>{s}</button>;
+                })}
+              </div>
+            </div>
+            {saveOk ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 12, background: C.success+"22", border: `1px solid ${C.success}`, borderRadius: 10, color: C.success, fontSize: 13, fontWeight: 700 }}>
+                <Check size={16}/> Gespeichert — Änderungen übernommen!
+              </div>
+            ) : (
+              <button onClick={saveEdit} disabled={saving} style={{ width: "100%", padding: 12, background: saving ? C.borderHi : C.primaryGrad, border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: FF.body, cursor: saving ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {saving ? "Wird gespeichert…" : <><Check size={14}/> Änderungen speichern</>}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div style={{ padding: 18, background: "linear-gradient(135deg, rgba(244,145,86,.18) 0%, rgba(231,111,81,.06) 100%)", border: `1.5px solid ${C.primary}80`, borderRadius: 14, marginBottom: 14 }}>
@@ -3147,17 +3167,15 @@ export default function App() {
   const navTab = (t) => { setTab(t); setView(null); };
   
   // STATT DEN DEMO-DATEN STARTEN WIR JETZT KOMPLETT LEER:
-  // Demo: alle Daten direkt geladen (kein Supabase)
   const [teachers, setTeachers] = useState(TEACHERS);
-  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const [students, setStudents] = useState([]);
   const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
   const [billingLog, setBillingLog] = useState([]);
   const [scheduleSlots, setScheduleSlots] = useState(INITIAL_SCHEDULE_SLOTS);
   const [liveSeconds, setLiveSeconds] = useState(120);
 
-  // Demo: Daten bereits als State initialisiert — kein Supabase
-
-  const store = makeStore(teachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots);
+  // Demo: Daten bereits initialisiert
+  const store = makeStore(teachers, setTeachers, students, setStudents, appointments, setAppointments, billingLog, setBillingLog, scheduleSlots, setScheduleSlots);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -3193,7 +3211,7 @@ export default function App() {
         const overdue = prev.filter(a => a.status === "checked-in" && a._checkedInTs && now - a._checkedInTs >= SIXTY_MIN);
         if (overdue.length === 0) return prev;
         // In der Datenbank festschreiben (sonst nach Reload wieder "offen")
-        // Demo: kein Supabase, nur State aktualisieren
+        // Demo: kein Supabase
         return prev.map(a => {
           if (!overdue.includes(a)) return a;
           const end = new Date(a._checkedInTs + SIXTY_MIN);
@@ -3207,11 +3225,11 @@ export default function App() {
   }, [authedUser]);
   const handleLogin = (profile) => {
     setAuthedUser(profile);
-    setTab(profile.role === 'admin' ? 'admin-billing' : 'today');
+    setTab(profile.role === 'admin' || profile.role === 'loc_admin' ? 'admin-billing' : 'today');
     setView(null);
   };
 
-  const isAdmin = authedUser?.role === "admin";
+  const isAdmin = authedUser?.role === "admin" || authedUser?.role === "loc_admin";
 
   const renderContent = () => {
     if (view?.type === "apt") return <AppointmentDetail aptId={view.id} store={store} onBack={() => setView(null)} onStudentClick={(id) => setView({ type: "student", id })} liveSeconds={liveSeconds}/>;
