@@ -493,7 +493,7 @@ function AppHeader({ user, onLogout }) {
   return (
     <div style={{ padding: "8px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}`, background: C.bgGrad, flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 8 }}/>
+        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 48, height: 48, objectFit: "contain" }}/>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi, lineHeight: 1.1 }}>{user.name}</div>
           <div style={{ fontSize: 10, color: isAdmin ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5 }}>
@@ -565,7 +565,7 @@ function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
     }}>
       {/* Logo & brand */}
       <div style={{ padding: "20px 20px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
-        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 8 }}/>
+        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 52, height: 52, objectFit: "contain" }}/>
         <div>
           <div style={{ fontFamily: FF.display, fontSize: 17, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Lernwelt</div>
           <div style={{ fontSize: 10, color: C.textDim, letterSpacing: 1.4, fontWeight: 700, marginTop: 3 }}>VERWALTUNG</div>
@@ -656,7 +656,7 @@ function Login({ onLogin }) {
   return (
     <div style={{ minHeight: "100%", maxHeight: "100%", overflow: "auto", display: "flex", flexDirection: "column", padding: "48px 28px 40px", background: C.bgGrad }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
-        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 12 }}/>
+        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 80, height: 80, objectFit: "contain" }}/>
         <div>
           <div style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Lernwelt</div>
           <div style={{ fontSize: 11, color: C.textDim, letterSpacing: 1.5, fontWeight: 600, marginTop: 2 }}>VERWALTUNGSPORTAL</div>
