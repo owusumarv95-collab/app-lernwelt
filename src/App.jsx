@@ -18,7 +18,7 @@ const C = {
   bg: "#F5F7FB", bgGrad: "linear-gradient(180deg, #FFFFFF 0%, #F0F4FA 100%)",
   surface: "#FFFFFF", surfaceHi: "#EEF2F9", surfaceLo: "#F0F4FA",
   border: "#DDE3EF", borderHi: "#C8D4E8",
-  primary: "#E8650A", primaryGrad: "linear-gradient(135deg, #F07820 0%, #E8650A 100%)",
+  primary: "#6D28D9", primaryGrad: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)",
   success: "#16A34A", warn: "#D97706", danger: "#DC2626", info: "#2563EB",
   textHi: "#0F1B2D", text: "#374151", textDim: "#6B7280", textVeryDim: "#9CA3AF",
 };
@@ -36,17 +36,11 @@ const HOURLY_RATE = 22; // EUR — demo rate for payroll display
 const ADMIN_PIN = "1234"; // Demo PIN for billing confirmation
 
 const LOCATIONS = [
-  { id: "heerdt",  name: "Duesseldorf Heerdt",  short: "Heerdt",  color: "#1A3A6B" },
-  { id: "garath",  name: "Duesseldorf Garath",  short: "Garath",  color: "#2563EB" },
-  { id: "neuss-i", name: "Neuss Innenstadt",    short: "Neuss-I", color: "#E8650A" },
-  { id: "neuss-f", name: "Neuss Furth",         short: "Neuss-F", color: "#16A34A" },
+  { id: "remscheid", name: "Remscheid", short: "Remscheid", color: "#6D28D9" },
 ];
 
 const ROOMS_BY_LOCATION = {
-  "heerdt":  [{id:"h1",name:"Raum 1"},{id:"h2",name:"Raum 2"},{id:"h3",name:"Raum 3"}],
-  "garath":  [{id:"g1",name:"Raum 1"},{id:"g2",name:"Raum 2"},{id:"g3",name:"Raum 3"}],
-  "neuss-i": [{id:"n1",name:"Raum 1"},{id:"n2",name:"Raum 2"}],
-  "neuss-f": [{id:"f1",name:"Raum 1"},{id:"f2",name:"Raum 2"}],
+  "remscheid": [{id:"r1",name:"Raum 1"},{id:"r2",name:"Raum 2"},{id:"r3",name:"Raum 3"}],
 };
 
 // Possible start times — every 30 min from 13:00 to 18:00 (last course ends at 19:00)
@@ -79,101 +73,69 @@ const isoWeek = (date) => {
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const TEACHERS = [
-  { id: 1, name: "Herr Stolle",    short: "ST", subjects: ["Mathe","Physik","Informatik"],  color: "#E8650A", role: "teacher", email: "stolle@lernwelt.de",    rate: 25, locationId: "heerdt"  },
-  { id: 2, name: "Frau Yilmaz",   short: "YI", subjects: ["Deutsch","DaZ","LRS"],          color: "#1A3A6B", role: "teacher", email: "yilmaz@lernwelt.de",    rate: 24, locationId: "heerdt"  },
-  { id: 3, name: "Herr Kovac",    short: "KO", subjects: ["Englisch","Franzoesisch"],       color: "#2563EB", role: "teacher", email: "kovac@lernwelt.de",     rate: 23, locationId: "garath"  },
-  { id: 4, name: "Frau Nguyen",   short: "NG", subjects: ["Mathe","Dyskalkulie","ZP10"],   color: "#16A34A", role: "teacher", email: "nguyen@lernwelt.de",    rate: 26, locationId: "neuss-i" },
-  { id: 5, name: "Herr Schreiber",short: "SC", subjects: ["Chemie","Biologie"],            color: "#7C3AED", role: "teacher", email: "schreiber@lernwelt.de", rate: 24, locationId: "neuss-i" },
-  { id: 6, name: "Frau Becker",   short: "BE", subjects: ["Vorschule","Deutsch"],          color: "#DB2777", role: "teacher", email: "becker@lernwelt.de",    rate: 22, locationId: "neuss-f" },
+  { id: 1, name: "Herr Stolle", short: "ST", subjects: ["Mathe","Physik","Informatik"], color: "#6D28D9", role: "teacher", email: "stolle@beck-up.de", rate: 25, locationId: "remscheid" },
+  { id: 2, name: "Frau Albrecht", short: "AL", subjects: ["Deutsch","Englisch","LRS"], color: "#0891B2", role: "teacher", email: "albrecht@beck-up.de", rate: 23, locationId: "remscheid" },
+  { id: 3, name: "Frau Nguyen", short: "NG", subjects: ["Mathe","Chemie","Biologie"], color: "#16A34A", role: "teacher", email: "nguyen@beck-up.de", rate: 24, locationId: "remscheid" },
 ];
 
 const ADMIN_USER = {
-  id: 99, name: "Admin", short: "AD", color: "#E8650A",
-  role: "admin", email: "admin@lernwelt.de",
+  id: 99, name: "Herr Beck", short: "BK", color: "#6D28D9",
+  role: "admin", email: "beck@beck-up.de",
 };
 
 const DEMO_USERS = [
-  { id: 99, name: "Admin (Ober)",        short: "AD", color: "#E8650A", role: "admin",     email: "admin@lernwelt.de",      password: "demo1234", subtitle: "Alle 4 Standorte" },
-  { id: 51, name: "Frau Kowollik",       short: "KW", color: "#1A3A6B", role: "loc_admin", email: "heerdt@lernwelt.de",     password: "demo1234", subtitle: "Standortleitung Heerdt",  locationId: "heerdt"  },
-  { id: 52, name: "Herr Dimitriou",      short: "DI", color: "#2563EB", role: "loc_admin", email: "garath@lernwelt.de",     password: "demo1234", subtitle: "Standortleitung Garath",  locationId: "garath"  },
-  { id: 53, name: "Frau Sahin",          short: "SA", color: "#E8650A", role: "loc_admin", email: "neuss-i@lernwelt.de",    password: "demo1234", subtitle: "Standortleitung Neuss-I", locationId: "neuss-i" },
-  { id: 54, name: "Herr Wolters",        short: "WO", color: "#16A34A", role: "loc_admin", email: "neuss-f@lernwelt.de",    password: "demo1234", subtitle: "Standortleitung Neuss-F", locationId: "neuss-f" },
-  { id: 1,  name: "Herr Stolle",         short: "ST", color: "#E8650A", role: "teacher",   email: "stolle@lernwelt.de",     password: "demo1234", subtitle: "Mathe · Physik · Informatik" },
-  { id: 2,  name: "Frau Yilmaz",         short: "YI", color: "#1A3A6B", role: "teacher",   email: "yilmaz@lernwelt.de",     password: "demo1234", subtitle: "Deutsch · DaZ · LRS" },
-  { id: 3,  name: "Herr Kovac",          short: "KO", color: "#2563EB", role: "teacher",   email: "kovac@lernwelt.de",      password: "demo1234", subtitle: "Englisch · Franzoesisch" },
-  { id: 4,  name: "Frau Nguyen",         short: "NG", color: "#16A34A", role: "teacher",   email: "nguyen@lernwelt.de",     password: "demo1234", subtitle: "Mathe · Dyskalkulie · ZP10" },
-  { id: 5,  name: "Herr Schreiber",      short: "SC", color: "#7C3AED", role: "teacher",   email: "schreiber@lernwelt.de",  password: "demo1234", subtitle: "Chemie · Biologie" },
-  { id: 6,  name: "Frau Becker",         short: "BE", color: "#DB2777", role: "teacher",   email: "becker@lernwelt.de",     password: "demo1234", subtitle: "Vorschule · Deutsch" },
+  { id: 99, name: "Herr Beck", short: "BK", color: "#6D28D9", role: "admin",   email: "beck@beck-up.de", password: "demo1234", subtitle: "Inhaber · Gesamtübersicht" },
+  { id: 1,  name: "Herr Stolle", short: "ST", color: "#6D28D9", role: "teacher", email: "stolle@beck-up.de", password: "demo1234", subtitle: "Mathe · Physik · Informatik" },
+  { id: 2,  name: "Frau Albrecht", short: "AL", color: "#0891B2", role: "teacher", email: "albrecht@beck-up.de", password: "demo1234", subtitle: "Deutsch · Englisch · LRS" },
+  { id: 3,  name: "Frau Nguyen", short: "NG", color: "#16A34A", role: "teacher", email: "nguyen@beck-up.de", password: "demo1234", subtitle: "Mathe · Chemie · Biologie" },
 ];
 
 const INITIAL_STUDENTS = [
-  { id: 1,  name: "Mia Hoffmann",   short: "MH", grade: 9,  subjects: ["Mathe"],           teacherId: 1, locationId: "heerdt",  focus: "ZP10-Vorbereitung", since: "Sep 2024", notes: "Algebra sicher, Stochastik schwach." },
-  { id: 2,  name: "Leon Mueller",   short: "LM", grade: 5,  subjects: ["Deutsch","LRS"],   teacherId: 2, locationId: "heerdt",  focus: "LRS-Foerderung",   since: "Jan 2025", notes: "Grosser Fortschritt beim Lesen." },
-  { id: 3,  name: "Noah Bauer",     short: "NB", grade: 11, subjects: ["Mathe","Physik"],  teacherId: 1, locationId: "heerdt",  focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Klausurniveau erreicht." },
-  { id: 4,  name: "Amira Hassan",   short: "AH", grade: 5,  subjects: ["Deutsch","DaZ"],  teacherId: 2, locationId: "heerdt",  focus: "Integration",      since: "Jan 2025", notes: "Deutsch wird besser." },
-  { id: 5,  name: "Sophia Kaya",    short: "SK", grade: 7,  subjects: ["Englisch"],        teacherId: 3, locationId: "garath",  focus: "Grammatik",        since: "Okt 2024", notes: "Vocabulary sehr gut." },
-  { id: 6,  name: "Tim Weber",      short: "TW", grade: 10, subjects: ["Englisch"],        teacherId: 3, locationId: "garath",  focus: "Abitur-Niveau",    since: "Sep 2024", notes: "Speaking sehr stark." },
-  { id: 7,  name: "Hana Al-Rashid", short: "HA", grade: 6,  subjects: ["Deutsch","DaZ"],  teacherId: 3, locationId: "garath",  focus: "Sprachfoerderung", since: "Feb 2025", notes: "Toll integriert." },
-  { id: 8,  name: "Lena Braun",     short: "LB", grade: 4,  subjects: ["Mathe","Dyskalkulie"], teacherId: 4, locationId: "neuss-i", focus: "Dyskalkulie", since: "Okt 2024", notes: "Mengenverstaendnis waechst." },
-  { id: 9,  name: "Jonas Klein",    short: "JK", grade: 9,  subjects: ["Mathe"],           teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Sep 2024", notes: "Stochastik verbessert." },
-  { id: 10, name: "Lukas Fischer",  short: "LF", grade: 8,  subjects: ["Chemie"],          teacherId: 5, locationId: "neuss-i", focus: "Klausur-Prep",     since: "Nov 2024", notes: "Organische Chemie schwierig." },
-  { id: 11, name: "Nele Wagner",    short: "NW", grade: 9,  subjects: ["Mathe"],           teacherId: 4, locationId: "neuss-i", focus: "ZP10",             since: "Mär 2025", notes: "Sehr ehrgeizig." },
-  { id: 12, name: "Emma Schaefer",  short: "ES", grade: 3,  subjects: ["Vorschule"],       teacherId: 6, locationId: "neuss-f", focus: "Schulstart",       since: "Mär 2025", notes: "Sehr fleissig." },
-  { id: 13, name: "Felix Richter",  short: "FR", grade: 12, subjects: ["Mathe"],           teacherId: 4, locationId: "neuss-f", focus: "Abi-Vorbereitung", since: "Aug 2024", notes: "Auf Kurs." },
+  { id: 1, name: "Leon Braun", short: "LB", grade: 10, subjects: ["Mathe"], teacherId: 1, locationId: "remscheid", focus: "ZP10-Vorbereitung", since: "Mrz 2026", notes: "Algebra sicher, Stochastik schwach." },
+  { id: 2, name: "Emma Wagner", short: "EW", grade: 8, subjects: ["Deutsch","LRS"], teacherId: 2, locationId: "remscheid", focus: "LRS-Förderung", since: "Jan 2026", notes: "Großer Fortschritt beim Lesen." },
+  { id: 3, name: "Finn Schmidt", short: "FS", grade: 12, subjects: ["Mathe","Physik"], teacherId: 1, locationId: "remscheid", focus: "Abi-Vorbereitung", since: "Sep 2025", notes: "Klausurniveau erreicht." },
+  { id: 4, name: "Mia Hoffmann", short: "MH", grade: 5, subjects: ["Englisch"], teacherId: 2, locationId: "remscheid", focus: "Grammatik", since: "Apr 2026", notes: "Vokabeln sehr gut." },
+  { id: 5, name: "Noah Krause", short: "NK", grade: 11, subjects: ["Physik"], teacherId: 1, locationId: "remscheid", focus: "Klausur-Prep", since: "Feb 2026", notes: "Mechanik solide." },
+  { id: 6, name: "Sophie Klein", short: "SK", grade: 9, subjects: ["Chemie"], teacherId: 3, locationId: "remscheid", focus: "ZP10", since: "Okt 2025", notes: "Organik schwierig." },
+  { id: 7, name: "Lukas Berg", short: "LK", grade: 7, subjects: ["Mathe"], teacherId: 3, locationId: "remscheid", focus: "Grundlagen", since: "Mrz 2026", notes: "Bruchrechnung im Aufbau." },
+  { id: 8, name: "Hana Demir", short: "HD", grade: 6, subjects: ["Deutsch"], teacherId: 2, locationId: "remscheid", focus: "Lesekompetenz", since: "Feb 2026", notes: "Toll motiviert." },
 ];
 
 // status: scheduled | checked-in | completed
 // completedDur in min, only set when checked out
 const INITIAL_APPOINTMENTS = [
-  { id: 101, day: 0, date: "08.06.", time: "14:00", plannedDur: 60, studentId: 2, teacherId: 2, subject: "Deutsch / LRS", room: "Raum 1", locationId: "heerdt",  status: "completed", completedDur: 60, notes: "Lesetraining super.", checkedInAt: "13:58", checkedOutAt: "14:58", billed: false, dateKey: "2026-06-08" },
-  { id: 102, day: 0, date: "08.06.", time: "15:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Mathe",        room: "Raum 2", locationId: "heerdt",  status: "checked-in", completedDur: null, notes: "", checkedInAt: "14:57", billed: false, dateKey: "2026-06-08", _checkedInTs: null },
-  { id: 103, day: 0, date: "08.06.", time: "16:00", plannedDur: 60, studentId: 3, teacherId: 1, subject: "Physik",       room: "Raum 1", locationId: "heerdt",  status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
-  { id: 201, day: 0, date: "08.06.", time: "14:30", plannedDur: 60, studentId: 5, teacherId: 3, subject: "Englisch",     room: "Raum 1", locationId: "garath",  status: "completed", completedDur: 60, notes: "", checkedInAt: "14:30", checkedOutAt: "15:30", billed: false, dateKey: "2026-06-08" },
-  { id: 202, day: 0, date: "08.06.", time: "15:30", plannedDur: 60, studentId: 7, teacherId: 3, subject: "DaZ",          room: "Raum 2", locationId: "garath",  status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
-  { id: 301, day: 0, date: "08.06.", time: "15:00", plannedDur: 60, studentId: 8, teacherId: 4, subject: "Dyskalkulie",  room: "Raum 1", locationId: "neuss-i", status: "completed", completedDur: 60, notes: "", checkedInAt: "15:01", checkedOutAt: "16:01", billed: false, dateKey: "2026-06-08" },
-  { id: 302, day: 0, date: "08.06.", time: "16:30", plannedDur: 60, studentId: 10,teacherId: 5, subject: "Chemie",       room: "Raum 2", locationId: "neuss-i", status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
-  { id: 401, day: 0, date: "08.06.", time: "14:00", plannedDur: 60, studentId: 12,teacherId: 6, subject: "Vorschule",    room: "Raum 1", locationId: "neuss-f", status: "completed", completedDur: 60, notes: "", checkedInAt: "14:00", checkedOutAt: "15:00", billed: false, dateKey: "2026-06-08" },
-  { id: 402, day: 0, date: "08.06.", time: "17:00", plannedDur: 60, studentId: 13,teacherId: 4, subject: "Mathe",        room: "Raum 2", locationId: "neuss-f", status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
-  // Vorwoche — abrechenbar
-  { id: 501, day: 0, date: "02.06.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Mathe",    room: "Raum 1", locationId: "heerdt",  status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-02" },
-  { id: 502, day: 0, date: "02.06.", time: "15:00", plannedDur: 60, studentId: 2, teacherId: 2, subject: "Deutsch",  room: "Raum 2", locationId: "heerdt",  status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-02" },
-  { id: 503, day: 1, date: "03.06.", time: "14:30", plannedDur: 60, studentId: 5, teacherId: 3, subject: "Englisch", room: "Raum 1", locationId: "garath",  status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-03" },
-  { id: 504, day: 1, date: "03.06.", time: "15:00", plannedDur: 60, studentId: 8, teacherId: 4, subject: "Mathe",    room: "Raum 1", locationId: "neuss-i", status: "completed", completedDur: 60, notes: "", billed: false, dateKey: "2026-06-03" },
+  { id: 101, day: 0, date: "08.06.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Mathe", room: "Raum 1", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "13:58", checkedOutAt: "14:58", notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 102, day: 0, date: "08.06.", time: "14:00", plannedDur: 60, studentId: 2, teacherId: 2, subject: "Deutsch", room: "Raum 2", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "14:01", checkedOutAt: "15:01", notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 103, day: 0, date: "08.06.", time: "15:00", plannedDur: 60, studentId: 5, teacherId: 1, subject: "Physik", room: "Raum 1", locationId: "remscheid", status: "checked-in", completedDur: null, checkedInAt: "14:59", _checkedInTs: null, notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 104, day: 0, date: "08.06.", time: "15:00", plannedDur: 60, studentId: 6, teacherId: 3, subject: "Chemie", room: "Raum 3", locationId: "remscheid", status: "scheduled", completedDur: null, notes: "", billed: false, dateKey: "2026-06-08" },
+  { id: 201, day: 1, date: "02.06.", time: "14:00", plannedDur: 60, studentId: 1, teacherId: 1, subject: "Mathe", room: "Raum 1", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "14:00", checkedOutAt: "15:00", notes: "", billed: false, dateKey: "2026-06-02" },
+  { id: 202, day: 1, date: "02.06.", time: "15:00", plannedDur: 60, studentId: 2, teacherId: 2, subject: "Deutsch", room: "Raum 2", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "15:00", checkedOutAt: "16:00", notes: "", billed: false, dateKey: "2026-06-02" },
+  { id: 203, day: 2, date: "03.06.", time: "14:00", plannedDur: 60, studentId: 3, teacherId: 1, subject: "Physik", room: "Raum 1", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "14:00", checkedOutAt: "15:00", notes: "", billed: false, dateKey: "2026-06-03" },
+  { id: 204, day: 2, date: "03.06.", time: "15:00", plannedDur: 60, studentId: 4, teacherId: 2, subject: "Englisch", room: "Raum 2", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "15:00", checkedOutAt: "16:00", notes: "", billed: false, dateKey: "2026-06-03" },
+  { id: 205, day: 3, date: "04.06.", time: "16:00", plannedDur: 60, studentId: 7, teacherId: 3, subject: "Mathe", room: "Raum 1", locationId: "remscheid", status: "completed", completedDur: 60, checkedInAt: "16:00", checkedOutAt: "17:00", notes: "", billed: false, dateKey: "2026-06-04" },
+  { id: 206, day: 3, date: "04.06.", time: "14:00", plannedDur: 60, studentId: 6, teacherId: 3, subject: "Chemie", room: "Raum 3", locationId: "remscheid", status: "completed", completedDur: 90, checkedInAt: "14:00", checkedOutAt: "15:30", notes: "", billed: false, dateKey: "2026-06-04" },
 ];
 
 // Schedule slots — the new admin-created weekly plan
 // Each slot: who teaches whom, where, when (60 min duration)
 // type: "einzel" | "gruppe"
 const INITIAL_SCHEDULE_SLOTS = [
-  // Heerdt — Mo
-  { id: "s001", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1,3],  type: "gruppe", notes: "" },
-  { id: "s002", day: 0, time: "15:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [3],    type: "einzel", notes: "" },
-  { id: "s003", day: 0, time: "14:00", locationId: "heerdt",  roomId: "h2", teacherId: 2, studentIds: [2,4],  type: "gruppe", notes: "" },
-  // Garath — Mo
-  { id: "s004", day: 0, time: "14:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5,6],  type: "gruppe", notes: "" },
-  { id: "s005", day: 0, time: "16:00", locationId: "garath",  roomId: "g2", teacherId: 3, studentIds: [7],    type: "einzel", notes: "" },
-  // Neuss-I — Mo
-  { id: "s006", day: 0, time: "15:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8,9],  type: "gruppe", notes: "" },
-  { id: "s007", day: 0, time: "16:30", locationId: "neuss-i", roomId: "n2", teacherId: 5, studentIds: [10],   type: "einzel", notes: "" },
-  // Neuss-F — Mo
-  { id: "s008", day: 0, time: "14:00", locationId: "neuss-f", roomId: "f1", teacherId: 6, studentIds: [12],   type: "einzel", notes: "" },
-  { id: "s009", day: 0, time: "15:30", locationId: "neuss-f", roomId: "f2", teacherId: 4, studentIds: [13],   type: "einzel", notes: "" },
-  // Di
-  { id: "s010", day: 1, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1],    type: "einzel", notes: "" },
-  { id: "s011", day: 1, time: "14:30", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [5],    type: "einzel", notes: "" },
-  { id: "s012", day: 1, time: "14:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [9,11], type: "gruppe", notes: "" },
-  // Mi
-  { id: "s013", day: 2, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 2, studentIds: [2,4],  type: "gruppe", notes: "" },
-  { id: "s014", day: 2, time: "15:00", locationId: "garath",  roomId: "g1", teacherId: 3, studentIds: [6],    type: "einzel", notes: "" },
-  { id: "s015", day: 2, time: "16:00", locationId: "neuss-i", roomId: "n2", teacherId: 5, studentIds: [10],   type: "einzel", notes: "" },
-  { id: "s016", day: 2, time: "14:30", locationId: "neuss-f", roomId: "f1", teacherId: 6, studentIds: [12],   type: "einzel", notes: "" },
-  // Do
-  { id: "s017", day: 3, time: "14:00", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [3],    type: "einzel", notes: "" },
-  { id: "s018", day: 3, time: "15:30", locationId: "garath",  roomId: "g2", teacherId: 3, studentIds: [7],    type: "einzel", notes: "" },
-  { id: "s019", day: 3, time: "17:00", locationId: "neuss-f", roomId: "f2", teacherId: 4, studentIds: [13],   type: "einzel", notes: "" },
-  // Fr
-  { id: "s020", day: 4, time: "14:30", locationId: "heerdt",  roomId: "h1", teacherId: 1, studentIds: [1,3],  type: "gruppe", notes: "" },
-  { id: "s021", day: 4, time: "16:00", locationId: "neuss-i", roomId: "n1", teacherId: 4, studentIds: [8],    type: "einzel", notes: "" },
+  { id: "s001", day: 0, time: "14:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [1,3], type: "gruppe", notes: "" },
+  { id: "s002", day: 0, time: "14:00", locationId: "remscheid", roomId: "r2", teacherId: 2, studentIds: [2,8], type: "gruppe", notes: "" },
+  { id: "s003", day: 0, time: "15:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [5], type: "einzel", notes: "" },
+  { id: "s004", day: 0, time: "15:00", locationId: "remscheid", roomId: "r3", teacherId: 3, studentIds: [6], type: "einzel", notes: "" },
+  { id: "s005", day: 1, time: "14:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [3], type: "einzel", notes: "" },
+  { id: "s006", day: 1, time: "15:00", locationId: "remscheid", roomId: "r2", teacherId: 2, studentIds: [4], type: "einzel", notes: "" },
+  { id: "s007", day: 1, time: "16:00", locationId: "remscheid", roomId: "r1", teacherId: 3, studentIds: [7], type: "einzel", notes: "" },
+  { id: "s008", day: 2, time: "14:00", locationId: "remscheid", roomId: "r1", teacherId: 2, studentIds: [2,8], type: "gruppe", notes: "" },
+  { id: "s009", day: 2, time: "15:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [1], type: "einzel", notes: "" },
+  { id: "s010", day: 2, time: "16:00", locationId: "remscheid", roomId: "r3", teacherId: 3, studentIds: [6], type: "einzel", notes: "" },
+  { id: "s011", day: 3, time: "14:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [1,3], type: "gruppe", notes: "" },
+  { id: "s012", day: 3, time: "14:00", locationId: "remscheid", roomId: "r2", teacherId: 2, studentIds: [4], type: "einzel", notes: "" },
+  { id: "s013", day: 3, time: "15:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [5], type: "einzel", notes: "" },
+  { id: "s014", day: 3, time: "15:30", locationId: "remscheid", roomId: "r2", teacherId: 3, studentIds: [7], type: "einzel", notes: "" },
+  { id: "s015", day: 4, time: "14:00", locationId: "remscheid", roomId: "r1", teacherId: 2, studentIds: [8], type: "einzel", notes: "" },
+  { id: "s016", day: 4, time: "15:00", locationId: "remscheid", roomId: "r1", teacherId: 1, studentIds: [3], type: "einzel", notes: "" },
 ];
 
 // --- Übersetzung zwischen DB-Spalten (snake_case) und App-Form (camelCase) ---
@@ -493,11 +455,11 @@ function AppHeader({ user, onLogout }) {
   return (
     <div style={{ padding: "8px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}`, background: C.bgGrad, flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 48, height: 48, objectFit: "contain" }}/>
+        <div style={{ width: 48, height: 48, borderRadius: 13, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontFamily: FF.display, fontWeight: 800, fontSize: 24 }}>b</div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.textHi, lineHeight: 1.1 }}>{user.name}</div>
           <div style={{ fontSize: 10, color: isAdmin ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5 }}>
-            {user.role === "admin" ? "OBER-ADMIN" : user.role === "loc_admin" ? "STANDORTLEITUNG" : "LEHRKRAFT"}
+            {user.role === "admin" ? "INHABER" : user.role === "loc_admin" ? "STANDORTLEITUNG" : "LEHRKRAFT"}
           </div>
         </div>
       </div>
@@ -565,9 +527,9 @@ function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
     }}>
       {/* Logo & brand */}
       <div style={{ padding: "20px 20px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
-        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 52, height: 52, objectFit: "contain" }}/>
+        <div style={{ width: 52, height: 52, borderRadius: 15, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontFamily: FF.display, fontWeight: 800, fontSize: 26 }}>b</div>
         <div>
-          <div style={{ fontFamily: FF.display, fontSize: 17, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Lernwelt</div>
+          <div style={{ fontFamily: FF.display, fontSize: 17, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>beck-up</div>
           <div style={{ fontSize: 10, color: C.textDim, letterSpacing: 1.4, fontWeight: 700, marginTop: 3 }}>VERWALTUNG</div>
         </div>
       </div>
@@ -600,7 +562,7 @@ function DesktopSidebar({ user, tab, setTab, isAdmin, onLogout }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.textHi, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</div>
           <div style={{ fontSize: 10, color: (user.role === "admin" || user.role === "loc_admin") ? C.primary : C.textDim, fontWeight: 700, letterSpacing: .5, marginTop: 2 }}>
-            {user.role === "admin" ? "OBER-ADMIN" : user.role === "loc_admin" ? "STANDORTLEITUNG" : "LEHRKRAFT"}
+            {user.role === "admin" ? "INHABER" : user.role === "loc_admin" ? "STANDORTLEITUNG" : "LEHRKRAFT"}
           </div>
         </div>
         <button onClick={onLogout} title="Abmelden" style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, width: 32, height: 32, borderRadius: 8, display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 }}>
@@ -639,7 +601,7 @@ function Login({ onLogin }) {
   const [error, setError] = React.useState("");
 
   const filtered = DEMO_USERS.filter(u => !email || u.email.toLowerCase().includes(email.toLowerCase()) || u.name.toLowerCase().includes(email.toLowerCase()));
-  const roleLabel = r => r === "admin" ? "Ober-Admin" : r === "loc_admin" ? "Standortleitung" : "Lehrkraft";
+  const roleLabel = r => r === "admin" ? "Inhaber" : r === "loc_admin" ? "Standortleitung" : "Lehrkraft";
   const roleColor = r => r === "admin" ? C.primary : r === "loc_admin" ? "#D97706" : C.success;
 
   const select = (u) => { setEmail(u.email); setPassword("demo1234"); setShowSugg(false); setError(""); };
@@ -656,9 +618,9 @@ function Login({ onLogin }) {
   return (
     <div style={{ minHeight: "100%", maxHeight: "100%", overflow: "auto", display: "flex", flexDirection: "column", padding: "48px 28px 40px", background: C.bgGrad }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
-        <img src="/lernwelt-logo.png" alt="Lernwelt" style={{ width: 80, height: 80, objectFit: "contain" }}/>
+        <div style={{ width: 80, height: 80, borderRadius: 22, background: C.primaryGrad, display: "grid", placeItems: "center", color: "#fff", fontFamily: FF.display, fontWeight: 800, fontSize: 40 }}>b</div>
         <div>
-          <div style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>Lernwelt</div>
+          <div style={{ fontFamily: FF.display, fontSize: 20, fontWeight: 700, color: C.textHi, lineHeight: 1 }}>beck-up</div>
           <div style={{ fontSize: 11, color: C.textDim, letterSpacing: 1.5, fontWeight: 600, marginTop: 2 }}>VERWALTUNGSPORTAL</div>
         </div>
       </div>
@@ -671,7 +633,7 @@ function Login({ onLogin }) {
           <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>E-Mail Adresse</label>
           <input type="email" value={email} onChange={e => { setEmail(e.target.value); setShowSugg(true); setError(""); }}
             onFocus={() => setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 200)}
-            placeholder="name@lernwelt.de" autoComplete="off"
+            placeholder="name@beck-up.de" autoComplete="off"
             style={{ width: "100%", padding: "13px 14px", borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, color: C.textHi, fontSize: 14, fontFamily: FF.body, outline: "none", boxSizing: "border-box" }}/>
           {showSugg && filtered.length > 0 && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
@@ -707,7 +669,7 @@ function Login({ onLogin }) {
 
       <div style={{ marginTop: 20, padding: "12px 14px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 10 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, marginBottom: 8, letterSpacing: 1 }}>DEMO-ZUGÄNGE</div>
-        {[{l:"Ober-Admin",e:"admin@lernwelt.de"},{l:"Standortleitung Heerdt",e:"heerdt@lernwelt.de"},{l:"Lehrkraft",e:"stolle@lernwelt.de"}].map(x => (
+        {[{l:"Inhaber",e:"beck@beck-up.de"},{l:"Lehrkraft",e:"stolle@beck-up.de"},{l:"Lehrkraft",e:"albrecht@beck-up.de"}].map(x => (
           <button key={x.e} type="button" onClick={() => select(DEMO_USERS.find(u=>u.email===x.e))} style={{ background:"transparent",border:"none",padding:"3px 0",cursor:"pointer",textAlign:"left",fontFamily:FF.body,display:"flex",gap:8,alignItems:"center",width:"100%" }}>
             <span style={{ fontSize:10, color:C.textVeryDim, minWidth:110 }}>{x.l}:</span>
             <span style={{ fontSize:11, color:C.primary, fontWeight:600 }}>{x.e}</span>
@@ -961,7 +923,7 @@ function ProfileScreen({ user, store, onLogout, onShowTimesheet }) {
   const openHrs = open.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
   const billedThisYear = isTeacher ? store.billedHoursForTeacher(user.id) : [];
   const billedHrs = billedThisYear.reduce((s,a) => s + (a.completedDur || 0)/60, 0);
-  const roleLabel = user.role === "admin" ? "Ober-Administrator · alle Standorte" :
+  const roleLabel = user.role === "admin" ? "Inhaber · Gesamtübersicht" :
     user.role === "loc_admin" ? `Standortleitung · ${user.subtitle || ""}` :
     (user.subjects || store.teachers.find(t=>t.id===user.id)?.subjects || []).join(" · ");
 
@@ -2972,7 +2934,7 @@ function AdminStaff({ store, onTeacherClick }) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <Field label="Name *" value={draft.name} onChange={v => setDraft(p=>({...p,name:v}))} placeholder="Vor- und Nachname"/>
-                <Field label="E-Mail" type="email" value={draft.email} onChange={v => setDraft(p=>({...p,email:v}))} placeholder="name@lernwelt.de"/>
+                <Field label="E-Mail" type="email" value={draft.email} onChange={v => setDraft(p=>({...p,email:v}))} placeholder="name@beck-up.de"/>
                 <Field label="Stundensatz (€)" type="number" value={draft.rate} onChange={v => setDraft(p=>({...p,rate:v}))} placeholder="22"/>
                 <div>
                   <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8, fontWeight: 600 }}>Standort</div>
